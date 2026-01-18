@@ -1,0 +1,17 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: appointment register
+  datasource:
+    driver-class-name: ${ap.datasource.driver-class-name}
+    url: jdbc:mysql://${ap.datasource.host}:${ap.datasource.port}/${ap.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${ap.datasource.username}
+    password: ${ap.datasource.password}
+# MyBatis??
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.luoye.appointmentregister.entity
+  configuration:
+    #??????
+    map-underscore-to-camel-case: true

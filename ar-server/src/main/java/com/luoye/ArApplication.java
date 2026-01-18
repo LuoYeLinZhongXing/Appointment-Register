@@ -1,13 +1,13 @@
-package com.luoye.appointmentregister;
+package com.luoye;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AppointmentRegisterApplication {
+public class ArApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AppointmentRegisterApplication.class, args);
+        SpringApplication.run(ArApplication.class, args);
     }
 
 }
