@@ -5,4 +5,15 @@ ap:
     port: 3306
     database: appointment_register
     username: root
-    password: 040810
+    password: 123456
+  redis:
+      host: localhost
+      port: 6379
+      password: ""
+      timeout: 1000
+  jwt:
+    key: appointment_register_development_secret_key_that_is_long_enough_for_hs512_algorithm_minimum_64_characters_required    # 开发环境专用密钥
+    ttl: 604800000  # 7天 (7*24*60*60*1000)
+
+order:
+  prefix: "LYLZX"  # 订单号前缀

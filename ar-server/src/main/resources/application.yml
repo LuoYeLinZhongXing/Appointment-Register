@@ -1,4 +1,58 @@
+# CORS配置
+# 生产环境CORS配置示例
+cors:
+  allowed-origins: http://localhost:3000,https://yourdomain.com
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: Content-Type,Authorization,X-Requested-With
+  allow-credentials: true
+  max-age: 3600
+
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  # 处理中文乱码
+  tomcat:
+    uri-encoding: UTF-8
+
+redisson:
+  singleServerConfig:           # 单节点Redis服务器配置
+    address: redis://${ap.redis.host:localhost}:${ap.redis.port:6379}  # Redis服务器地址
+    password: ${ap.redis.password:~}           # Redis密码（如果没有则为空）
+    database: ${ap.redis.database:0}          # Redis数据库索引（默认0号库）
+    connectionPoolSize: 10        # 连接池大小（最多10个连接）
+    connectionMinimumIdleSize: 2  # 最小空闲连接数（保持2个空闲连接）
+    idleConnectionTimeout: 10000  # 空闲连接超时时间（10秒）
+    connectTimeout: 10000         # 连接超时时间（10秒）
+    timeout: 3000                 # 命令执行超时时间（3秒）
+    threads: 4                      # Redisson内部线程数
+    nettyThreads: 8                 # Netty线程数（用于网络通信）
+
+
 spring:
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1h
+      cache-null-values: true
+  data:
+    redis:
+      host: ${ap.redis.host:localhost}
+      port: ${ap.redis.port:6379}
+      password: ${ap.redis.password:}
+      database: ${ap.redis.database:0}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   profiles:
     active: dev
   application:
@@ -8,10 +62,91 @@ spring:
     url: jdbc:mysql://${ap.datasource.host}:${ap.datasource.port}/${ap.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: ${ap.datasource.username}
     password: ${ap.datasource.password}
-# MyBatis??
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.luoye.appointmentregister.entity
+
+mybatis-plus:
   configuration:
-    #??????
-    map-underscore-to-camel-case: true
+    mapUnderscoreToCamelCase: true
+  global-config:
+    db-config:
+      logic-delete-field: isDelete
+      logic-delete-value: 0
+      logic-not-delete-value: 1
+  mapper-locations: classpath*:mapper/*.xml
+# JWT配置
+jwt:
+  key: ${ap.jwt.key:appointment_register_secret_key}
+  ttl: ${ap.jwt.ttl:604800000} # 7天 (7*24*60*60*1000)
+logging:
+  level:
+    # 设置根日志级别为INFO，保留应用启动和关键业务日志
+    root: INFO
+
+    # 项目包保持INFO级别
+    com.luoye: INFO
+
+    # 特殊处理需要保留的组件
+    com.luoye.interceptor.JwtInterceptor: INFO  # JWT拦截器保持WARN级别
+    com.luoye.util.JwtUtil: WARN  # JWT工具类保持WARN级别
+
+    # 保留缓存监控切面的INFO级别
+    com.luoye.aspect.CacheMonitorAspect: INFO
+
+    # 保留服务执行时间监控的INFO级别
+    com.luoye.aspect.ServiceExecutionTimeAspect: INFO
+
+
+    # 明确保留service.impl包的INFO级别，确保调试信息能显示
+    com.luoye.service.impl: INFO
+
+
+    # 将MyBatis和数据库相关日志设为WARN，减少SQL执行日志
+    org.mybatis: WARN
+    com.baomidou.mybatisplus: WARN
+    org.springframework.jdbc: WARN
+
+    # Redis相关设为WARN
+    org.springframework.data.redis: WARN
+
+    # Web框架设为WARN
+    org.springframework.web: WARN
+    org.apache.catalina: WARN
+    org.apache.tomcat: WARN
+
+  pattern:
+    console: "%d{HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
+  file:
+    name: logs/app.log
+    max-size: 10MB
+    max-history: 30
+
+# SpringDoc OpenAPI配置
+springdoc:
+  # API文档路径
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  # Swagger UI配置
+  swagger-ui:
+    path: /swagger-ui.html
+    # 默认展开所有接口
+    doc-expansion: full
+    # 支持的HTTP方法
+    supported-submit-methods: get,put,post,delete,patch
+  # 扫描包路径
+  packages-to-scan: com.luoye.controller
+  # 路径匹配
+  paths-to-match: /**
+  # 分组配置
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+
+# knife4j的增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+order:
+  prefix: ${order.prefix}  # 订单号前缀
+
