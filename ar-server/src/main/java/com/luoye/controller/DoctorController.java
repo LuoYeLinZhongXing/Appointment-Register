@@ -83,6 +83,7 @@ public class DoctorController {
     @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = PageResult.class)))
     public Result<PageResult<Doctor>> doctorPageQuery(@RequestBody DoctorPageQueryDTO doctorPageQueryDTO) {
+            System.out.println( doctorPageQueryDTO);
             PageResult<Doctor> pageResult =doctorService.pageQuery(doctorPageQueryDTO);
             System.out.println( pageResult);
             return Result.success(pageResult);

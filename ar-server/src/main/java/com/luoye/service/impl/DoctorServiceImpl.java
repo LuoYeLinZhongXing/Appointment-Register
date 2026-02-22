@@ -115,6 +115,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
             return MessageConstant.PHONE_FORMAT_ERROR;
         }
 
+
         // 验证密码
         if (doctorRegisterDTO.getPassword().trim().isEmpty()) {
             return  MessageConstant.PASSWORD_EMPTY;
@@ -143,6 +144,11 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (doctorRegisterDTO.getCard() != null && !doctorRegisterDTO.getCard().trim().isEmpty()) {
             if (!doctorRegisterDTO.getCard().matches("^\\d{17}[\\dXx]$")) {
                 return MessageConstant.CARD_FORMAT_ERROR;
+            }
+            // 验证身份证号唯一性
+            Long cardCount = doctorMapper.selectCount(new QueryWrapper<Doctor>().eq("card", doctorRegisterDTO.getCard().trim()));
+            if (cardCount > 0) {
+                return "身份证号已存在，请使用其他身份证号";
             }
         }
 
@@ -513,6 +519,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         Doctor doctorToUpdate = new Doctor();
         doctorToUpdate.setId(doctor.getId());
         doctorToUpdate.setPassword(DigestUtils.md5DigestAsHex(newPassword.getBytes()));
+        doctorToUpdate.setDeptId(doctor.getDeptId());
         doctorToUpdate.setUpdateTime(LocalDateTime.now());
 
         int result = doctorMapper.updateById(doctorToUpdate);

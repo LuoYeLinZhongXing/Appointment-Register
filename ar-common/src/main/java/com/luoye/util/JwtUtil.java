@@ -126,8 +126,30 @@ public class JwtUtil implements org.springframework.beans.factory.InitializingBe
      */
     public static boolean isValidTokenFormat(String token) {
         if (token == null || token.trim().isEmpty()) {
+            logger.warn("Token为空或null");
             return false;
         }
-        return JWT_PATTERN.matcher(token.trim()).matches();
+        
+        String trimmedToken = token.trim();
+        logger.info("验证token格式: {}", trimmedToken);
+        logger.info("Token长度: {}", trimmedToken.length());
+        
+        // 检查是否包含Bearer前缀
+        if (trimmedToken.startsWith("Bearer ")) {
+            logger.warn("Token包含Bearer前缀，需要去除");
+            return false;
+        }
+        
+        boolean matches = JWT_PATTERN.matcher(trimmedToken).matches();
+        if (!matches) {
+            logger.warn("Token格式不匹配正则表达式");
+            logger.warn("正则表达式: {}", JWT_PATTERN.pattern());
+            logger.warn("Token各部分:");
+            String[] parts = trimmedToken.split("\\.");
+            for (int i = 0; i < parts.length; i++) {
+                logger.warn("  第{}部分: {}", i+1, parts[i]);
+            }
+        }
+        return matches;
     }
 }

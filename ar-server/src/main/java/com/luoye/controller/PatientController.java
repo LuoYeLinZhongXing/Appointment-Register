@@ -4,12 +4,10 @@ import com.luoye.Result;
 import com.luoye.annotation.OperationLogger;
 import com.luoye.constant.MessageConstant;
 import com.luoye.context.BaseContext;
-import com.luoye.dto.patient.PatientForgotPasswordDTO;
-import com.luoye.dto.patient.PatientLoginDTO;
-import com.luoye.dto.patient.PatientRegisterDTO;
-import com.luoye.dto.patient.PatientUpdateDTO;
+import com.luoye.dto.patient.*;
 import com.luoye.entity.Patient;
 import com.luoye.service.PatientService;
+import com.luoye.vo.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -78,7 +76,7 @@ public class PatientController {
     @GetMapping("/getById/{id}")
     @Operation(summary = "查询患者详情", description = "根据患者ID获取详细信息")
     @Parameter(name = "id", description = "患者ID", required = true)
-    @ApiResponse(responseCode = "200", description = "查询成功", 
+    @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = Patient.class)))
     public Result<Patient> getById(@PathVariable Long id) {
         Patient patient = patientService.getById(id);
@@ -102,5 +100,19 @@ public class PatientController {
 
         patientService.delete(currentPatientId);
         return Result.success(MessageConstant.DELETE_SUCCESS);
+    }
+
+    /**
+     * 分页查询患者
+     * @param patientQueryDTO 查询条件
+     * @return 分页结果
+     */
+    @PostMapping("/page")
+    @Operation(summary = "分页查询患者", description = "根据ID、姓名、手机号、性别进行分页查询，支持按创建时间排序")
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(schema = @Schema(implementation = PageResult.class)))
+    public Result<PageResult<Patient>> patientPageQuery(@RequestBody PatientQueryDTO patientQueryDTO) {
+        PageResult<Patient> pageResult = patientService.pageQuery(patientQueryDTO);
+        return Result.success(pageResult);
     }
 }

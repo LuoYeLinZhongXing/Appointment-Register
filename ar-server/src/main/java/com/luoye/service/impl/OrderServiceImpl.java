@@ -1,5 +1,6 @@
 package com.luoye.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.luoye.context.BaseContext;
 import com.luoye.dto.RegisterDTO;
@@ -89,6 +90,27 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
             throw new BaseException(MessageConstant.USER_NOT_LOGIN);
         }
 
+        QueryWrapper<Order> orderQueryWrapper = new QueryWrapper<Order>()
+                .eq("patient_id", patientId).eq("slot_id", registerDTO.getSlotId());
+
+        Order existingOrder = orderMapper.selectOne(orderQueryWrapper);
+        if(existingOrder != null){
+            // 根据订单状态给出不同的提示信息
+            switch (existingOrder.getOrderStatus()) {
+                case 1:
+                    throw new BaseException("您已预约该号源，请前往支付或取消后重新预约");
+                case 2:
+                    throw new BaseException("您已成功预约并支付该号源，无需重复预约");
+                case 3:
+                    throw new BaseException("您已就诊该号源，无法重复预约");
+                case 4:
+                    // 已取消的订单允许重新预约，继续后续流程
+                    log.info("用户{} previously cancelled order for slot {}, allowing re-registration", patientId, registerDTO.getSlotId());
+                    break;
+                default:
+                    throw new BaseException("您已预约该号源，状态异常");
+            }
+        }
         //获取号源信息
         Slot slot = slotService.getSlotById(registerDTO.getSlotId());
         if(slot == null){

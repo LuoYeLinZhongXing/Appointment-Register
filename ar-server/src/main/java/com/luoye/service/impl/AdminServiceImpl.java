@@ -118,10 +118,14 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         claims.put("phone", admin.getPhone());
         String token = JwtUtil.createToken(claims);
 
+        // 重要：登录成功后设置BaseContext，供本次请求使用
+        BaseContext.setCurrentId(admin.getId(), "ADMIN");
+
         //生成返回结果
         HashMap<String, Object> result = new HashMap<>();
         result.put("token", token);
         result.put("admin", admin);
+
 
         log.info("管理员登录成功，手机号:"+ adminLoginDTO.getPhone());
         return result;

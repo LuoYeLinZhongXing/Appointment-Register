@@ -546,7 +546,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
     }
 
     /**
-     * 处理患者过号（医生手动操作）
+     * 处理患者过号
      * @param queueId 队列ID
      */
     @Override
@@ -688,8 +688,8 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
      */
     private void removeQueueElementFromCache(String cacheKey, Long queueId) {
         try {
-            // 由于外层已有分布式锁，这里可以直接操作
-            //手动遍历删除（增量方式）
+            //直接操作
+            //手动遍历删除
             List<Object> currentList = redisUtil.lrange(cacheKey, 0, -1);
             if (currentList == null || currentList.isEmpty()) {
                 return; // 队列为空，无需删除

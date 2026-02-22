@@ -898,7 +898,7 @@ public class RedisUtil {
     }
 
     /**
-     * 通用的实体缓存获取方法 - 使用默认过期时间(30分钟)
+     * 通用的实体缓存获取方法
      * @param prefix 缓存键前缀
      * @param id 实体ID
      * @param clazz 实体类型
@@ -911,19 +911,6 @@ public class RedisUtil {
         return getEntityWithCache(prefix, id, clazz, queryFunction, CACHE_EXPIRE_TIME, TimeUnit.MINUTES);
     }
 
-    /**
-     * 清除实体缓存
-     * @param prefix 缓存键前缀
-     * @param id 实体ID
-     * @return 是否清除成功
-     */
-    public boolean removeEntityCache(String prefix, Long id) {
-        if (prefix == null || id == null) {
-            return false;
-        }
-        String cacheKey = prefix + id;
-        return remove(cacheKey);
-    }
     /**
      * 执行取消号源预订的Lua脚本
      * @param bookedCountKey 已预订数键

@@ -85,7 +85,7 @@ logging:
     com.luoye: INFO
 
     # 特殊处理需要保留的组件
-    com.luoye.interceptor.JwtInterceptor: INFO  # JWT拦截器保持WARN级别
+    com.luoye.interceptor.JwtInterceptor: info  # JWT拦截器保持WARN级别
     com.luoye.util.JwtUtil: WARN  # JWT工具类保持WARN级别
 
     # 保留缓存监控切面的INFO级别

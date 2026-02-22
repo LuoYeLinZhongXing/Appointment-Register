@@ -153,9 +153,18 @@ public class JwtInterceptor implements HandlerInterceptor {
      */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        // 清理线程本地变量
-        BaseContext.removeCurrentId();
-        BaseContext.removeCurrentIdentity();
+        String requestUri = request.getRequestURI();
+        // 不要在登录/注册请求后清理BaseContext，因为这些请求会设置BaseContext
+        if (!(requestUri.equals("/admin/login") || 
+              requestUri.equals("/admin/register") ||
+              requestUri.equals("/doctor/login") || 
+              requestUri.equals("/doctor/register") ||
+              requestUri.equals("/patient/login") || 
+              requestUri.equals("/patient/register"))) {
+            // 清理线程本地变量
+            BaseContext.removeCurrentId();
+            BaseContext.removeCurrentIdentity();
+        }
     }
 
     /**

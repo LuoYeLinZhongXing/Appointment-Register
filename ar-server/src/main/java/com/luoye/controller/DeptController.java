@@ -51,7 +51,7 @@ public class DeptController {
      */
     @PostMapping("/page")
     @Operation(summary = "分页查询科室", description = "根据ID、名称、类型、状态进行分页查询，支持按创建时间排序")
-    @ApiResponse(responseCode = "200", description = "查询成功", 
+    @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = PageResult.class)))
     public Result<PageResult<Dept>> deptPageQuery(@RequestBody DeptPageQueryDTO deptPageQueryDTO) {
         Map<String, Object> pageResult = deptService.pageQuery(deptPageQueryDTO);
@@ -63,7 +63,7 @@ public class DeptController {
         deptPageResult.setSize((Integer) pageResult.get("size"));
         return Result.success(deptPageResult);
     }
-    
+
     /**
      * 更新科室信息
      * @param deptUpdateDTO 科室更新数据传输对象
@@ -105,16 +105,16 @@ public class DeptController {
         deptService.updateStatus(statusUpdateDTO);
         return Result.success(MessageConstant.STATUS_UPDATE_SUCCESS);
     }
-    
+
     /**
      * 根据ID查询科室
      * @param id 科室ID
      * @return 科室实体
      */
-    @GetMapping("/{id}")
+    @GetMapping("/getById/{id}")
     @Operation(summary = "根据ID查询科室", description = "根据科室ID获取科室详细信息")
     @Parameter(name = "id", description = "科室ID", required = true)
-    @ApiResponse(responseCode = "200", description = "查询成功", 
+    @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = Dept.class)))
     public Result<Dept> getById(@PathVariable Long id) {
         com.luoye.entity.Dept dept = deptService.getById(id);
@@ -127,7 +127,7 @@ public class DeptController {
      */
     @GetMapping("/getAllEnabled")
     @Operation(summary = "获取所有启用的科室", description = "获取所有启用状态的科室列表")
-    @ApiResponse(responseCode = "200", description = "查询成功", 
+    @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = Dept.class)))
     public Result<List<Dept>> getAllEnabledDepts() {
         List<Dept> depts = deptService.getAllEnabledDepts();

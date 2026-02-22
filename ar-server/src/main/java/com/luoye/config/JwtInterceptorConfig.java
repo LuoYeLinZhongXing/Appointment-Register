@@ -41,6 +41,7 @@ public class JwtInterceptorConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/patient/login")
                 .excludePathPatterns("/doctor/register")
                 .excludePathPatterns("/doctor/login")
+                .excludePathPatterns("/doctor/forgot-password")
                 .excludePathPatterns("/admin/register")
                 .excludePathPatterns("/admin/login");
     }
