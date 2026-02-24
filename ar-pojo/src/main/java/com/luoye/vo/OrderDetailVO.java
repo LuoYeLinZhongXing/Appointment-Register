@@ -38,7 +38,7 @@ public class OrderDetailVO {
     /**
      * 挂号费
      */
-    private BigDecimal feeAmount;
+    private Integer feeAmount;
 
     /**
      * 订单状态：1.待支付 2.已支付 3.已取消 4.已就诊

@@ -10,6 +10,7 @@ import com.luoye.entity.Queue;
 import com.luoye.service.DoctorService;
 import com.luoye.service.QueueService;
 import com.luoye.vo.PageResult;
+import com.luoye.vo.QueueDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -162,11 +163,15 @@ public class DoctorController {
             return Result.success(doctors);
     }
 
+    /**
+     * 查询当前排队队列
+     * @return 队列列表
+     */
     @GetMapping("/current-queue")
     @Operation(summary = "查询当前排队队列", description = "医生查询自己当前的排队队列信息")
     @ApiResponse(responseCode = "200", description = "查询成功",
             content = @Content(schema = @Schema(implementation = Queue.class)))
-    public Result<List<Queue>> getCurrentQueue() {
+    public Result<List<QueueDetailVO>> getCurrentQueue() {
         // 验证医生身份
         String currentUserType = BaseContext.getCurrentIdentity();
         Long currentUserId = BaseContext.getCurrentId();
@@ -176,13 +181,12 @@ public class DoctorController {
         }
 
         // 获取当前医生的排队队列
-        List<Queue> queueList = queueService.getDoctorQueueFromRedis(currentUserId);
+        List<QueueDetailVO> queueList = queueService.getDoctorQueueDetailsFromRedis(currentUserId);
         return Result.success(queueList);
     }
 
     /**
      * 医生叫号
-     * @param doctorCallDTO 医生叫号数据传输对象
      * @return 叫号结果
      */
     @PostMapping("/call-next")
@@ -190,8 +194,8 @@ public class DoctorController {
     @ApiResponse(responseCode = "200", description = "叫号成功",
                 content = @Content(schema = @Schema(implementation = Queue.class)))
     @OperationLogger(operationType = "UPDATE", targetType = "QUEUE")
-    public Result<Queue> callNextPatient(@RequestBody DoctorCallDTO doctorCallDTO) {
-        Queue calledPatient = queueService.callNextPatient(doctorCallDTO);
+    public Result<Queue> callNextPatient() {
+        Queue calledPatient = queueService.callNextPatient();
         return Result.success(calledPatient);
     }
 

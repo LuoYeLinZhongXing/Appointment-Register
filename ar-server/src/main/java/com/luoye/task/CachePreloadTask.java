@@ -10,7 +10,9 @@ import com.luoye.mapper.SlotMapper;
 import com.luoye.service.*;
 import com.luoye.util.RedisUtil;
 import com.luoye.vo.PageResult;
+import com.luoye.vo.SlotVO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -34,6 +36,10 @@ public class CachePreloadTask {
     private AdminMapper adminMapper;
     @Autowired
     private DeptMapper deptMapper;
+
+    @Autowired
+    private DeptService deptService;  // 添加DeptService依赖
+
 
     @Autowired
     private DoctorMapper doctorMapper;
@@ -285,7 +291,11 @@ public class CachePreloadTask {
                 // 缓存每个日期的号源列表
                 for (Map.Entry<LocalDate, List<Slot>> dateEntry : slotsByDate.entrySet()) {
                     LocalDate scheduleDate = dateEntry.getKey();
-                    List<Slot> dailySlots = dateEntry.getValue();
+                    List<SlotVO> dailySlots = dateEntry.getValue().stream().map(slot -> {
+                        SlotVO slotVO = new SlotVO();
+                        BeanUtils.copyProperties(slot, slotVO);
+                        return slotVO;
+                    }).collect(Collectors.toList());
 
                     String cacheKey = "slot_doctor_date::" + doctorId + "::" + scheduleDate;
                     redisUtil.set(cacheKey, dailySlots, 25, TimeUnit.HOURS);

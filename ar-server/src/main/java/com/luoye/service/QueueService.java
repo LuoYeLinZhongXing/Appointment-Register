@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.luoye.dto.doctor.DoctorCallDTO;
 import com.luoye.entity.Order;
 import com.luoye.entity.Queue;
+import com.luoye.vo.QueueDetailVO;
 
 import java.util.List;
 
@@ -28,6 +29,14 @@ public interface QueueService extends IService<Queue> {
      * @return 队列列表
      */
     List<Queue> getDoctorQueueFromRedis(Long doctorId);
+
+    /**
+     * 从Redis获取医生队列详情（包装后的数据）
+     * @param doctorId 医生ID
+     * @return 队列详情列表
+     */
+    List<QueueDetailVO> getDoctorQueueDetailsFromRedis(Long doctorId);
+
 
     /**
      * 将队列数据同步到Redis
@@ -66,10 +75,9 @@ public interface QueueService extends IService<Queue> {
 
     /**
      * 叫号
-     * @param doctorCallDTO 医生叫号信息
      * @return 叫号结果
      */
-    Queue callNextPatient(DoctorCallDTO doctorCallDTO);
+    Queue callNextPatient();
 
 
 

@@ -5,8 +5,10 @@ import com.luoye.annotation.OperationLogger;
 import com.luoye.constant.MessageConstant;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.vo.OrderDetailVO;
 import com.luoye.service.OrderService;
+import com.luoye.vo.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -54,6 +56,20 @@ public class OrderController {
     public Result<OrderDetailVO> getOrderById(@PathVariable Long orderId){
         OrderDetailVO orderDetailVO = orderService.getOrderDetailById(orderId);
         return  Result.success(orderDetailVO);
+    }
+
+    /**
+     * 分页查询订单信息
+     * @param orderPageQueryDTO 查询条件
+     * @return 分页查询结果
+     */
+    @PostMapping("/page")
+    @Operation(summary = "分页查询订单", description = "根据患者ID、医生ID、订单状态等条件分页查询订单信息")
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(schema = @Schema(implementation = PageResult.class)))
+    public Result<PageResult<OrderDetailVO>> pageQueryOrders(@RequestBody OrderPageQueryDTO orderPageQueryDTO) {
+        PageResult<OrderDetailVO> pageResult = orderService.pageQueryOrders(orderPageQueryDTO);
+        return Result.success(pageResult);
     }
 
     /**

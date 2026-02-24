@@ -311,7 +311,6 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
      * @return 科室列表
      */
     @Override
-    @Cacheable(value = "dept_list", key = "'enabled'", unless = "#result == null || #result.isEmpty()")
     public List<Dept> getAllEnabledDepts() {
         return deptMapper.selectList(new QueryWrapper<Dept>().eq("status", 1));
     }

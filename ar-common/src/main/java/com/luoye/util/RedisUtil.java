@@ -239,6 +239,39 @@ public class RedisUtil {
         }
     }
 
+// 在 RedisUtil 类中添加这个方法
+    /**
+     * 使用带类型信息的方式存储对象到Redis
+     * @param key 键
+     * @param value 值
+     * @param time 过期时间
+     * @param timeUnit 时间单位
+     * @return 存储结果
+     */
+    public boolean setObjectWithTypeInfo(String key, Object value, long time, TimeUnit timeUnit) {
+        try {
+            if (key == null || value == null) {
+                return false;
+            }
+
+            // 使用 redisObjectMapper 显式序列化，确保包含类型信息
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
+
+            // 存储为字符串，但包含完整的类型信息
+            if (time > 0) {
+                redisTemplate.opsForValue().set(key, jsonString, time, timeUnit);
+            } else {
+                redisTemplate.opsForValue().set(key, jsonString);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
     /**
      * 批量获取缓存数据
      * @param keys 键列表
@@ -727,6 +760,7 @@ public class RedisUtil {
             return false;
         }
     }
+
 
     /**
      * Redisson分布式锁 - 释放锁

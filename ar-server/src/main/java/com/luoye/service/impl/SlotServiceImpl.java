@@ -168,8 +168,8 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
      * @return 列表
      */
     @Override
-    @Cacheable(value = "slot_doctor_date", key = "#doctorId + '::' + #scheduleDate", unless = "#result == null || #result.isEmpty()")
     public List<SlotVO> getSlotsByDoctorAndDate(Long doctorId, LocalDate scheduleDate) {
+
         // 获取医生信息
         if (doctorId == null) {
             String currentIdentity = BaseContext.getCurrentIdentity();
@@ -190,15 +190,29 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
             scheduleDate = LocalDate.now();
         }
 
+        // 先从Redis缓存查询
+        String cacheKey = "slot_doctor_date::" + doctorId + "::" + scheduleDate;
+        List<SlotVO> cachedSlots = redisUtil.getList(cacheKey, SlotVO.class);
+        if (cachedSlots != null && !cachedSlots.isEmpty()) {
+            return cachedSlots;
+        }
+
+        // 缓存未命中，查询数据库
         LambdaQueryWrapper<Slot> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Slot::getDoctorId, doctorId)
                 .eq(Slot::getScheduleDate, scheduleDate)
                 .orderByAsc(Slot::getTimePeriod);
         List<Slot> slots = slotMapper.selectList(queryWrapper);
 
-
         // 转换为VO对象
-        return slots.stream().map(this::convertToVO).collect(Collectors.toList());
+        List<SlotVO> slotVOs = slots.stream().map(this::convertToVO).collect(Collectors.toList());
+
+        // 将结果缓存到Redis
+        if (!slotVOs.isEmpty()) {
+            redisUtil.set(cacheKey, slotVOs, 2, TimeUnit.HOURS);
+        }
+
+        return slotVOs;
     }
 
     /**
@@ -210,8 +224,6 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
         SlotVO vo = new SlotVO();
         //批量属性复制
         BeanUtils.copyProperties(slot, vo);
-        //设置剩余号源数
-        vo.setRemainingCount(slot.getTotalCount() - slot.getBookedCount());
 
         // 设置医生信息
         Doctor doctor = redisUtil.getEntityWithCache("doctor::", slot.getDoctorId(), Doctor.class,
@@ -461,7 +473,6 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
                 return false;
             }
 
-
             // 检查并更新Redis库存
             String bookedCountKey = "slot_inventory::bookedCount::" + slotId ;
             Long newBookedCount = redisUtil.decrementDirect(bookedCountKey);
@@ -507,7 +518,13 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
                 return false;
             }
 
-            return executeBooking(slotId, slot.getBookedCount(), slot.getTotalCount());
+            //获取号源库存
+            String bookedCountKey = "slot_inventory::bookedCount::" + slotId ;
+            String totalCountKey = "slot_inventory::totalCount::" + slotId ;
+            Integer bookedCount = redisUtil.get(bookedCountKey,Integer.class);
+            Integer totalCount  = redisUtil.get(totalCountKey,Integer.class);
+
+            return executeBooking(slotId, bookedCount, totalCount);
 
         } catch (Exception e) {
             log.error("预订号源失败，slotId: " + slotId, e);
@@ -560,14 +577,14 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
         String bookedCountKey = "slot_inventory::bookedCount::" + slotId;
         Integer bookedCount = redisUtil.get(bookedCountKey, Integer.class);
         if (bookedCount == null) {
-            bookedCount = slot.getBookedCount();
+            bookedCount = slotMapper.selectById(slotId).getBookedCount();
         }
 
         // 从缓存获取总数
         String totalCountKey = "slot_inventory::totalCount::" + slotId;
         Integer totalCount = redisUtil.get(totalCountKey, Integer.class);
         if (totalCount == null) {
-            totalCount = slot.getTotalCount();
+            totalCount = slotMapper.selectById(slotId).getTotalCount();
         }
 
         // 构建库存信息
@@ -601,8 +618,9 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
         Integer currentBooked = redisUtil.get(bookedCountKey, Integer.class);
         Integer totalCount = redisUtil.get(totalCountKey, Integer.class);
 
-        if (currentBooked == null) currentBooked = slot.getBookedCount();
-        if (totalCount == null) totalCount = slot.getTotalCount();
+        if (currentBooked == null)
+            currentBooked = slotMapper.selectById(slotId).getBookedCount();
+        if (totalCount == null) totalCount = slotMapper.selectById(slotId).getTotalCount();
 
         return currentBooked < totalCount;
 

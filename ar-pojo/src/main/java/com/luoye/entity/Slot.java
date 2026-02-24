@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 
@@ -49,6 +50,7 @@ public class Slot implements Serializable {
      * 出诊日期
      */
     @TableField(value = "schedule_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate scheduleDate;
 
     /**

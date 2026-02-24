@@ -467,13 +467,18 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
      * @return 医生列表
      */
     @Override
-    @Cacheable(value = "doctor_dept",key = "#deptId" ,unless = "#result == null")
     public List<Doctor> getDoctorsByDeptId(Long deptId) {
-        // 从数据库查询（缓存未命中时）
-        QueryWrapper<Doctor> wrapper = new QueryWrapper<>();
-        wrapper.eq("dept_id", deptId);
-        wrapper.eq("status", 1); // 只查询在职医生
-        return doctorMapper.selectList(wrapper);
+        // 读取时使用类型安全的方法
+        List<Doctor> doctorsInDept = redisUtil.getList("doctor_dept::" + deptId, Doctor.class);
+
+        if(doctorsInDept == null) {
+            // 从数据库查询（缓存未命中时）
+            QueryWrapper<Doctor> wrapper = new QueryWrapper<>();
+            wrapper.eq("dept_id", deptId);
+            wrapper.eq("status", 1); // 只查询在职医生
+            doctorsInDept = doctorMapper.selectList(wrapper);
+        }
+        return doctorsInDept;
     }
 
     /**

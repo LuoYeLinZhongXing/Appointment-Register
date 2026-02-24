@@ -2,6 +2,7 @@ package com.luoye.controller;
 
 import com.luoye.Result;
 import com.luoye.annotation.OperationLogger;
+import com.luoye.dto.slot.SlotInventoryInfo;
 import com.luoye.dto.slot.SlotPageQueryDTO;
 import com.luoye.dto.slot.SlotReleaseDTO;
 import com.luoye.entity.Slot;
@@ -120,4 +121,26 @@ public class SlotController {
             return Result.error("号源删除失败");
         }
     }
+
+
+    /**
+     * 获取号源库存信息
+     * @param slotId 号源ID
+     * @return 库存信息
+     */
+    @GetMapping("/getInventoryInfo/{slotId}")
+    @Operation(summary = "获取号源库存信息", description = "获取指定号源的库存信息")
+    @Parameter(name = "slotId", description = "号源ID", required = true)
+    @ApiResponse(responseCode = "200", description = "查询成功",
+                content = @Content(schema = @Schema(implementation = SlotInventoryInfo.class)))
+    public Result<SlotInventoryInfo> getSlotInventoryInfo(@PathVariable Long slotId){
+        SlotInventoryInfo slotInventoryInfo = slotService.getSlotInventoryInfo(slotId);
+        if(slotInventoryInfo != null){
+            return Result.success(slotInventoryInfo);
+        }else{
+            return Result.error("获取号源库存信息失败");
+        }
+    }
+
+    //TODO 根据号源id查询预约这个号源的患者信息
 }

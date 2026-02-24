@@ -9,6 +9,7 @@ import com.luoye.dto.dept.DeptStatusUpdateDTO;
 import com.luoye.dto.dept.DeptUpdateDTO;
 import com.luoye.entity.Dept;
 import com.luoye.service.DeptService;
+import com.luoye.util.RedisUtil;
 import com.luoye.vo.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/dept")
@@ -29,6 +31,9 @@ public class DeptController {
 
     @Autowired
     private DeptService deptService;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     /**
      * 创建科室
@@ -126,11 +131,27 @@ public class DeptController {
      * @return 科室列表
      */
     @GetMapping("/getAllEnabled")
-    @Operation(summary = "获取所有启用的科室", description = "获取所有启用状态的科室列表")
+    @Operation(summary = "获取所有启用的科室", description = "获取所有状态为启用的科室信息")
     @ApiResponse(responseCode = "200", description = "查询成功",
                 content = @Content(schema = @Schema(implementation = Dept.class)))
     public Result<List<Dept>> getAllEnabledDepts() {
+        // 手动处理缓存，避免Spring Cache的序列化问题
+        String cacheKey = "dept_list::enabled";
+
+        // 先尝试从缓存获取
+        List<Dept> cachedDepts = redisUtil.getList(cacheKey, Dept.class);
+        if (cachedDepts != null && !cachedDepts.isEmpty()) {
+            return Result.success(cachedDepts);
+        }
+
+        // 缓存未命中，查询数据库
         List<Dept> depts = deptService.getAllEnabledDepts();
+
+        // 将结果存入缓存
+        if (depts != null && !depts.isEmpty()) {
+            redisUtil.set(cacheKey, depts, 2, TimeUnit.HOURS); // 缓存2小时
+        }
+
         return Result.success(depts);
     }
 

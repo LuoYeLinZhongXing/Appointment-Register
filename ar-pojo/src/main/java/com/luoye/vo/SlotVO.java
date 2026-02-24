@@ -39,7 +39,7 @@ public class SlotVO {
     /**
      * 医生挂号费
      */
-    private BigDecimal feeAmount;
+    private Integer feeAmount;
 
     /**
      * 科室名称
@@ -55,21 +55,6 @@ public class SlotVO {
      * 时间段: morning/afternoon/night
      */
     private String timePeriod;
-
-    /**
-     * 总号源数
-     */
-    private Integer totalCount;
-
-    /**
-     * 已预约数
-     */
-    private Integer bookedCount;
-
-    /**
-     * 剩余号源数
-     */
-    private Integer remainingCount;
 
     /**
      * 号源状态：1.可预约, 0.已停诊, 2.已约满

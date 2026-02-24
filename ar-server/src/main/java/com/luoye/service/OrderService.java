@@ -3,8 +3,10 @@ package com.luoye.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.vo.OrderDetailVO;
 import com.luoye.entity.Order;
+import com.luoye.vo.PageResult;
 
 public interface OrderService extends IService<Order> {
 
@@ -43,4 +45,10 @@ public interface OrderService extends IService<Order> {
      */
     boolean cancelOrder(OrderCancelDTO orderCancelDTO);
 
+    /**
+     * 分页查询订单信息
+     * @param orderPageQueryDTO 查询条件
+     * @return 订单信息
+     */
+    PageResult<OrderDetailVO> pageQueryOrders(OrderPageQueryDTO orderPageQueryDTO);
 }

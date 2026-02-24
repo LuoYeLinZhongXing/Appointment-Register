@@ -9,14 +9,17 @@ import com.luoye.context.BaseContext;
 import com.luoye.dto.doctor.DoctorCallDTO;
 import com.luoye.entity.Doctor;
 import com.luoye.entity.Order;
+import com.luoye.entity.Patient;
 import com.luoye.entity.Queue;
 import com.luoye.mapper.DoctorMapper;
 import com.luoye.mapper.OrderMapper;
+import com.luoye.mapper.PatientMapper;
 import com.luoye.mapper.QueueMapper;
 import com.luoye.service.DoctorService;
 import com.luoye.service.QueueService;
 import com.luoye.util.RedisUtil;
 import com.luoye.constant.MessageConstant;
+import com.luoye.vo.QueueDetailVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,6 +39,9 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
 
     @Autowired
     private QueueMapper queueMapper;
+
+    @Autowired
+    private PatientMapper patientMapper;
 
     @Autowired
     private DoctorService doctorService;
@@ -169,14 +175,85 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                 }
             }
 
-
         } catch (Exception e) {
             log.error("获取医生队列缓存失败，医生ID:" + doctorId, e);
         }
 
+
         System.out.println(queueList);
         return queueList;
     }
+
+    /**
+     * 从Redis获取医生队列详情（包装后的数据）
+     * @param doctorId 医生ID
+     * @return 队列详情列表
+     */
+    @Override
+    public List<QueueDetailVO> getDoctorQueueDetailsFromRedis(Long doctorId) {
+        String cacheKey = "queue_doctor::" + doctorId;
+        List<QueueDetailVO> detailList = new ArrayList<>();
+
+        try {
+            // 检查缓存是否存在
+            if (!redisUtil.hasKey(cacheKey)) {
+                // 缓存不存在，初始化队列
+                initializeDoctorQueueInRedis(doctorId);
+                return new ArrayList<>();
+            }
+
+            // 直接从Redis获取并转换，避免调用getDoctorQueueFromRedis造成的重复处理
+            List<Object> objectList = redisUtil.lrange(cacheKey, 0, -1);
+            if (objectList != null && !objectList.isEmpty()) {
+                for (Object obj : objectList) {
+                    try {
+                        String jsonStr = obj.toString();
+                        Queue queue = objectMapper.readValue(jsonStr, Queue.class);
+
+                        QueueDetailVO detailVO = new QueueDetailVO();
+                        
+                        // 设置队列ID
+                        detailVO.setId(queue.getId());
+
+                        // 获取订单信息
+                        Order order = redisUtil.getEntityWithCache("order::", queue.getOrderId(), Order.class,
+                                orderId -> orderMapper.selectById(orderId));
+                        if (order != null) {
+                            detailVO.setOrderNo(order.getOrderNo());
+                        }
+
+                        // 获取患者信息
+                        com.luoye.entity.Patient patient = redisUtil.getEntityWithCache("patient::", queue.getPatientId(), com.luoye.entity.Patient.class,
+                                patientId -> patientMapper.selectById(patientId));
+                        if (patient != null) {
+                            detailVO.setPatientName(patient.getName());
+                        }
+
+                        // 设置其他字段（原样返回）
+                        detailVO.setIsPriority(queue.getIsPriority());
+                        detailVO.setQueueNumber(queue.getQueueNumber());
+                        detailVO.setQueueStatus(queue.getQueueStatus());
+                        detailVO.setCheckInTime(queue.getCheckInTime());
+                        detailVO.setCallTime(queue.getCallTime());
+                        detailVO.setStartTime(queue.getStartTime());
+                        detailVO.setEndTime(queue.getEndTime());
+                        detailVO.setMissedCount(queue.getMissedCount());
+                        detailVO.setMaxMissedAllowed(queue.getMaxMissedAllowed());
+
+                        detailList.add(detailVO);
+                    } catch (JsonProcessingException e) {
+                        log.error("解析队列数据失败: " + obj, e);
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("获取医生队列详情失败，医生ID:" + doctorId, e);
+        }
+
+        return detailList;
+    }
+
 
     /**
      * 将队列数据同步到Redis
@@ -481,12 +558,11 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
 
     /**
      * 医生叫号
-     * @param doctorCallDTO 医生叫号信息
      * @return 叫号结果
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Queue callNextPatient(DoctorCallDTO doctorCallDTO) {
+    public Queue callNextPatient() {
         // 验证医生身份
         String currentUserType = BaseContext.getCurrentIdentity();
         Long currentUserId = BaseContext.getCurrentId();

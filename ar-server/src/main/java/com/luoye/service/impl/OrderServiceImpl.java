@@ -1,11 +1,13 @@
 package com.luoye.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.luoye.context.BaseContext;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.constant.MessageConstant;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.service.QueueService;
 import com.luoye.service.SlotService;
 import com.luoye.vo.OrderDetailVO;
@@ -14,6 +16,8 @@ import com.luoye.exception.BaseException;
 import com.luoye.mapper.*;
 import com.luoye.service.OrderService;
 import com.luoye.util.RedisUtil;
+import com.luoye.vo.PageResult;
+import com.luoye.vo.SlotVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +28,10 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 订单服务实现类
@@ -39,6 +45,9 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
 
     @Autowired
     private SlotService slotService;
+
+    @Autowired
+    private SlotMapper slotMapper;
 
     @Autowired
     private OrderMapper orderMapper;
@@ -136,8 +145,11 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
             Integer currentBooked = redisUtil.get(bookedCountKey, Integer.class);
             Integer totalCount = redisUtil.get(totalCountKey, Integer.class);
 
-            if (currentBooked == null) currentBooked = slot.getBookedCount();
-            if (totalCount == null) totalCount = slot.getTotalCount();
+            if (currentBooked == null){
+                currentBooked = slotMapper.selectById(registerDTO.getSlotId()).getBookedCount();
+            }
+            if (totalCount == null)
+                totalCount = slotMapper.selectById(registerDTO.getSlotId()).getTotalCount();
 
             if (currentBooked >= totalCount) {
                 throw new BaseException("号源已被预订完，请选择其他时间段");
@@ -417,6 +429,121 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
         } finally {
             redisUtil.unlock(lockKey);
         }
+    }
+
+    /**
+     * 分页查询订单
+     * @param orderPageQueryDTO 查询条件
+     * @return 订单列表
+     */
+    @Override
+    public PageResult<OrderDetailVO> pageQueryOrders(OrderPageQueryDTO orderPageQueryDTO) {
+        // 设置默认分页参数
+        int pageNum = orderPageQueryDTO.getPage() != null ? orderPageQueryDTO.getPage() : 1;
+        int pageSize = orderPageQueryDTO.getSize() != null ? orderPageQueryDTO.getSize() : 10;
+
+        // 验证分页参数
+        if (pageNum < 1) {
+            throw new BaseException(MessageConstant.PAGE_NUMBER_INVALID);
+        }
+        if (pageSize < 1 || pageSize > 100) {
+            throw new BaseException(MessageConstant.PAGE_SIZE_INVALID);
+        }
+
+        // 创建分页对象
+        Page<Order> page = new Page<>(pageNum, pageSize);
+
+        // 构建查询条件
+        QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
+
+        // 按订单号模糊查询
+        if (orderPageQueryDTO.getOrderNo() != null && !orderPageQueryDTO.getOrderNo().trim().isEmpty()) {
+            queryWrapper.like("order_no", orderPageQueryDTO.getOrderNo().trim());
+        }
+
+
+        // 按号源ID精确查询
+        if (orderPageQueryDTO.getSlotId() != null) {
+            queryWrapper.eq("slot_id", orderPageQueryDTO.getSlotId());
+        }
+
+        // 按订单状态查询
+        if (orderPageQueryDTO.getOrderStatus() != null) {
+            queryWrapper.eq("order_status", orderPageQueryDTO.getOrderStatus());
+        }
+
+        // 按是否急诊查询
+        if (orderPageQueryDTO.getIsEmergency() != null) {
+            queryWrapper.eq("is_emergency", orderPageQueryDTO.getIsEmergency());
+        }
+
+        // 设置排序 - 使用数据库字段名（下划线格式）
+        String sortBy = orderPageQueryDTO.getSortBy();
+        if (sortBy == null || sortBy.isEmpty()) {
+            sortBy = "create_time";
+        }
+
+        String sortDir = orderPageQueryDTO.getSortDir();
+        if (sortDir == null || sortDir.isEmpty()) {
+            sortDir = "desc";
+        }
+
+        if ("asc".equalsIgnoreCase(sortDir)) {
+            queryWrapper.orderByAsc(sortBy);
+        } else {
+            queryWrapper.orderByDesc(sortBy);
+        }
+
+        // 执行分页查询
+        Page<Order> orderPage = orderMapper.selectPage(page, queryWrapper);
+
+        // 转换为OrderDetailVO
+        List<OrderDetailVO> orderDetailVOList = orderPage.getRecords().stream()
+                .map(this::convertToOrderDetailVO)
+                .collect(Collectors.toList());
+
+        // 构建分页结果
+        PageResult<OrderDetailVO> pageResult = new PageResult<>();
+        pageResult.setTotal(orderPage.getTotal());
+        pageResult.setRecords(orderDetailVOList);
+        pageResult.setPages((int) orderPage.getPages());
+        pageResult.setCurrent((int) orderPage.getCurrent());
+        pageResult.setSize((int) orderPage.getSize());
+
+        return pageResult;
+    }
+
+    /**
+     * 将Order实体转换为OrderDetailVO
+     * @param order 订单实体
+     * @return 订单详情VO
+     */
+    private OrderDetailVO convertToOrderDetailVO(Order order) {
+        OrderDetailVO orderDetailVO = new OrderDetailVO();
+        BeanUtils.copyProperties(order, orderDetailVO);
+
+        // 获取关联的患者信息
+        Patient patient = redisUtil.getEntityWithCache("patient::", order.getPatientId(), Patient.class,
+                patientId -> patientMapper.selectById(patientId));
+        if (patient != null) {
+            orderDetailVO.setPatientName(patient.getName());
+        }
+
+        // 获取关联的医生信息
+        Doctor doctor = redisUtil.getEntityWithCache("doctor::", order.getDoctorId(), Doctor.class,
+                doctorId -> doctorMapper.selectById(doctorId));
+        if (doctor != null) {
+            orderDetailVO.setDoctorName(doctor.getName());
+        }
+
+        // 获取关联的科室信息
+        Dept dept = redisUtil.getEntityWithCache("dept::", order.getDeptId(), Dept.class,
+                deptId -> deptMapper.selectById(deptId));
+        if (dept != null) {
+            orderDetailVO.setDeptName(dept.getName());
+        }
+
+        return orderDetailVO;
     }
 
 }
