@@ -5,6 +5,7 @@ import com.luoye.annotation.OperationLogger;
 import com.luoye.constant.MessageConstant;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderCheckInDTO;
 import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.vo.OrderDetailVO;
 import com.luoye.service.OrderService;
@@ -18,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -59,6 +61,19 @@ public class OrderController {
     }
 
     /**
+     * 根据患者ID查询订单列表
+     * @return 订单列表
+     */
+    @GetMapping("/patient/orders")
+    @Operation(summary = "查询患者订单列表", description = "根据当前登录患者ID查询所有订单")
+    @ApiResponse(responseCode = "200", description = "查询成功",
+                content = @Content(schema = @Schema(implementation = OrderDetailVO.class)))
+    public Result<List<OrderDetailVO>> getOrdersByPatientId() {
+        List<OrderDetailVO> orderList = orderService.getOrdersByPatientId();
+        return Result.success(orderList);
+    }
+
+    /**
      * 分页查询订单信息
      * @param orderPageQueryDTO 查询条件
      * @return 分页查询结果
@@ -89,6 +104,19 @@ public class OrderController {
         }else{
             return Result.success(MessageConstant.ORDER_PAY_FAILURE,false);
         }
+    }
+
+    /**
+     * 患者取号
+     * @param orderCheckInDTO 取号信息
+     * @return 订单详细信息
+     */
+    @PostMapping("/check-in")
+    @Operation(summary = "患者取号", description = "患者根据订单ID进行取号操作")
+    @OperationLogger(operationType = "UPDATE", targetType = "ORDER")
+    public Result<OrderDetailVO> checkInOrder(@RequestBody OrderCheckInDTO orderCheckInDTO) {
+        OrderDetailVO orderDetail = orderService.checkInOrder(orderCheckInDTO);
+        return Result.success(orderDetail);
     }
 
     /**

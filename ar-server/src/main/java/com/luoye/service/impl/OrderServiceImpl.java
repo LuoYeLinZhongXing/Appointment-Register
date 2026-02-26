@@ -7,6 +7,7 @@ import com.luoye.context.BaseContext;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.constant.MessageConstant;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderCheckInDTO;
 import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.service.QueueService;
 import com.luoye.service.SlotService;
@@ -155,6 +156,8 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                 throw new BaseException("号源已被预订完，请选择其他时间段");
             }
 
+            //TODO 让前端传来实际需要支付的金额，根据该金额进行修改
+
             // 无锁预订号源
             boolean bookingSuccess = slotService.bookSlot(registerDTO.getSlotId());
             if (!bookingSuccess) {
@@ -241,6 +244,37 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
     }
 
     /**
+     * 根据患者ID查询订单信息
+     * @return 订单详情列表
+     */
+    @Override
+    public List<OrderDetailVO> getOrdersByPatientId() {
+        // 从BaseContext获取当前患者ID
+        Long patientId = BaseContext.getCurrentId();
+        if (patientId == null) {
+            throw new BaseException(MessageConstant.USER_NOT_LOGIN);
+        }
+
+        log.info("根据患者ID查询订单信息 - 患者ID: {}", patientId);
+
+        // 构建查询条件：按患者ID查询，按创建时间倒序排列
+        QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("patient_id", patientId)
+                   .orderByDesc("create_time");
+
+        // 查询订单列表
+        List<Order> orderList = orderMapper.selectList(queryWrapper);
+
+        // 转换为OrderDetailVO列表
+        List<OrderDetailVO> orderDetailVOList = orderList.stream()
+                .map(this::convertToOrderDetailVO)
+                .collect(Collectors.toList());
+
+        log.info("查询到 {} 条订单记录", orderDetailVOList.size());
+        return orderDetailVOList;
+    }
+
+    /**
      * 支付订单
      * @param orderId 订单ID
      * @return 是否支付成功
@@ -288,6 +322,8 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                     throw new BaseException(MessageConstant.ORDER_CANCEL);
                 }else if(Order.ORDER_STATUS_COMPLETED.equals(order.getOrderStatus())){
                     throw new BaseException(MessageConstant.ORDER_CHECK_IN);
+                }else if(Order.ORDER_STATUS_CHECKED_IN.equals(order.getOrderStatus())){
+                    throw new BaseException(MessageConstant.ORDER_ALREADY_CHECKED_IN);
                 }else {
                     throw new BaseException(MessageConstant.ORDER_STATUS_ERROR);
                 }
@@ -305,8 +341,10 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                 throw new BaseException(MessageConstant.PAYMENT_FAILED);
             }
 
-            //根据订单类型处理排队逻辑
-            queueService.handleQueueAfterPayment(order);
+            //TODO，患者报道后处理排队逻辑
+
+//            //根据订单类型处理排队逻辑
+//            queueService.handleQueueAfterPayment(order);
 
             return true;
 
@@ -315,7 +353,6 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
             redisUtil.unlock(lockKey);
         }
     }
-
 
     /**
      * 生成订单号
@@ -346,6 +383,94 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
         log.info("生成订单号: {}, 长度: {}", orderNo, orderNo.length());
         return orderNo;
     }
+
+    /**
+     * 患者取号
+     * @param orderCheckInDTO 取号信息
+     * @return 订单详细信息
+     */
+    @Override
+    @Transactional
+    @CacheEvict(cacheNames = "order", key = "#orderCheckInDTO.orderId")
+    public OrderDetailVO checkInOrder(OrderCheckInDTO orderCheckInDTO) {
+        // 获取患者ID
+        Long patientId = BaseContext.getCurrentId();
+        if (patientId == null) {
+            throw new BaseException(MessageConstant.USER_NOT_LOGIN);
+        }
+
+        Long orderId = orderCheckInDTO.getOrderId();
+
+        // 查询订单信息
+        Order order = orderService.getOrderById(orderId);
+        if (order == null) {
+            throw new BaseException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 验证订单是否属于当前患者
+        if (!order.getPatientId().equals(patientId)) {
+            throw new BaseException(MessageConstant.NO_PERMISSION);
+        }
+
+        // 检查订单状态是否可以取号
+        if (!Order.ORDER_STATUS_PAID.equals(order.getOrderStatus())) {
+            if (Order.ORDER_STATUS_PENDING.equals(order.getOrderStatus())) {
+                throw new BaseException("请先完成支付再进行取号");
+            } else if (Order.ORDER_STATUS_CANCELLED.equals(order.getOrderStatus())) {
+                throw new BaseException(MessageConstant.ORDER_CANCEL);
+            } else if (Order.ORDER_STATUS_COMPLETED.equals(order.getOrderStatus())) {
+                throw new BaseException(MessageConstant.ORDER_CHECK_IN);
+            } else if (Order.ORDER_STATUS_CHECKED_IN.equals(order.getOrderStatus())) {
+                throw new BaseException(MessageConstant.ORDER_ALREADY_CHECKED_IN);
+            } else {
+                throw new BaseException(MessageConstant.ORDER_STATUS_ERROR);
+            }
+        }
+
+        // 使用号源锁防止并发问题
+        String lockKey = "lock:slot_operation:" + order.getSlotId();
+        boolean locked = redisUtil.tryLock(lockKey, 3000, 15000, TimeUnit.MILLISECONDS);
+        if (!locked) {
+            throw new BaseException(MessageConstant.SYSTEM_BUSY);
+        }
+
+        try {
+            // 双检锁：再次查询订单状态
+            Order currentOrder = orderService.getOrderById(orderId);
+            if (currentOrder == null) {
+                throw new BaseException(MessageConstant.ORDER_NOT_FOUND);
+            }
+
+            if (!Order.ORDER_STATUS_PAID.equals(currentOrder.getOrderStatus())) {
+                throw new BaseException("订单状态已变更，请刷新后重试");
+            }
+
+            // 更新订单状态为已取号
+            Order updatedOrder = new Order();
+            updatedOrder.setId(orderId);
+            updatedOrder.setOrderStatus(Order.ORDER_STATUS_CHECKED_IN);
+            updatedOrder.setCheckInTime(LocalDateTime.now());
+            updatedOrder.setUpdateTime(LocalDateTime.now());
+
+            int result = orderMapper.updateById(updatedOrder);
+            if (result <= 0) {
+                throw new BaseException("取号失败，请稍后重试");
+            }
+
+            // 取号成功后处理排队逻辑
+            queueService.handleQueueAfterPayment(order);
+
+            // 获取更新后的订单详情
+            return getOrderDetailById(orderId);
+
+        } finally {
+            redisUtil.unlock(lockKey);
+        }
+    }
+
+
+
+
 
     /**
      * 取消订单
@@ -396,6 +521,8 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                     throw new BaseException(MessageConstant.ORDER_CANCEL);
                 } else if (Order.ORDER_STATUS_COMPLETED.equals(currentOrder.getOrderStatus())){
                     throw new BaseException(MessageConstant.ORDER_CHECK_IN);
+                } else if(Order.ORDER_STATUS_CHECKED_IN.equals(currentOrder.getOrderStatus())){
+                    throw new BaseException(MessageConstant.ORDER_ALREADY_CHECKED_IN);
                 }
              }
 
@@ -421,7 +548,7 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                 throw new BaseException("订单取消时号源库存恢复失败");
             }
 
-            // 异步移除队列
+            //移除队列
             queueService.removeFromQueue(orderId);
 
             return true;

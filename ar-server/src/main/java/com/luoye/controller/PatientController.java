@@ -6,25 +6,34 @@ import com.luoye.constant.MessageConstant;
 import com.luoye.context.BaseContext;
 import com.luoye.dto.patient.*;
 import com.luoye.entity.Patient;
+import com.luoye.entity.Queue;
 import com.luoye.service.PatientService;
+import com.luoye.service.QueueService;
 import com.luoye.vo.PageResult;
+import com.luoye.vo.QueueDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/patient")
 @Tag(name = "患者管理", description = "患者相关操作接口")
+@Slf4j
 public class PatientController {
     @Autowired
     private PatientService patientService;
+
+    @Autowired
+    private QueueService queueService;
 
     @PostMapping("/register")
     @Operation(summary = "患者注册", description = "新患者注册账户")
@@ -114,5 +123,36 @@ public class PatientController {
     public Result<PageResult<Patient>> patientPageQuery(@RequestBody PatientQueryDTO patientQueryDTO) {
         PageResult<Patient> pageResult = patientService.pageQuery(patientQueryDTO);
         return Result.success(pageResult);
+    }
+
+    /**
+     * 患者查询排队队列
+     * @return 医生队列数据
+     */
+    @GetMapping("/queue")
+    @Operation(summary = "患者查询排队队列", description = "患者根据自己的排队状态查询对应医生的完整队列信息")
+    @ApiResponse(responseCode = "200", description = "查询成功",
+            content = @Content(schema = @Schema(implementation = Queue.class)))
+    @OperationLogger(operationType = "QUERY", targetType = "QUEUE")
+    public Result<List<QueueDetailVO>> getPatientQueueInfo() {
+        // 从BaseContext获取当前患者ID
+        Long patientId = BaseContext.getCurrentId();
+        String userType = BaseContext.getCurrentIdentity();
+
+        log.info("患者查询队列请求 - 患者ID: {}, 用户类型: {}", patientId, userType);
+
+        if (patientId == null) {
+            log.error("患者ID为空");
+            return Result.error("用户未登录");
+        }
+
+        if (!"PATIENT".equals(userType)) {
+            log.error("用户类型不正确: {}", userType);
+            return Result.error("权限不足");
+        }
+
+        List<QueueDetailVO> queueList = queueService.getPatientQueueInfo(patientId);
+        log.info("患者查询队列结果 - 返回数据条数: {}", queueList.size());
+        return Result.success(queueList);
     }
 }

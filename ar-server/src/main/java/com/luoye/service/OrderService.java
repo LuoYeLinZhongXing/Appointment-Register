@@ -3,10 +3,13 @@ package com.luoye.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.luoye.dto.RegisterDTO;
 import com.luoye.dto.order.OrderCancelDTO;
+import com.luoye.dto.order.OrderCheckInDTO;
 import com.luoye.dto.order.OrderPageQueryDTO;
 import com.luoye.vo.OrderDetailVO;
 import com.luoye.entity.Order;
 import com.luoye.vo.PageResult;
+
+import java.util.List;
 
 public interface OrderService extends IService<Order> {
 
@@ -51,4 +54,21 @@ public interface OrderService extends IService<Order> {
      * @return 订单信息
      */
     PageResult<OrderDetailVO> pageQueryOrders(OrderPageQueryDTO orderPageQueryDTO);
+
+    /**
+     * 患者取号
+     * @param orderCheckInDTO 取号信息
+     * @return 订单详细信息
+     */
+    OrderDetailVO checkInOrder(OrderCheckInDTO orderCheckInDTO);
+
+
+
+    /**
+     * 根据患者ID查询订单信息
+     * @return 订单详情列表
+     */
+    List<OrderDetailVO> getOrdersByPatientId();
+
+
 }

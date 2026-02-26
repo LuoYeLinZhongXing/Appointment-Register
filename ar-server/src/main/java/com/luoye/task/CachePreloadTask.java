@@ -62,6 +62,9 @@ public class CachePreloadTask {
     @Autowired
     private SlotMapper slotMapper;
 
+    @Autowired
+    private QueueService queueService;
+
     /**
      * 每天零点执行，预加载科室和医生数据到Redis
      */
@@ -89,6 +92,8 @@ public class CachePreloadTask {
 
             // 预加载患者数据
             preloadPatientData();
+
+            queueService.initializeAllDoctorsQueue();
 
             log.info("缓存预加载任务完成！");
             operationDetail += "；缓存预加载任务完成！";

@@ -136,7 +136,8 @@ public class MessageConstant {
 
     public static final String CANCEL_REASON_REQUIRED = "取消原因不能为空";
 
-    public static final String ORDER_ALREADY_CHECKED_IN = "订单已报到";
+    public static final String ORDER_ALREADY_CHECKED_IN = "订单已取号";
+
 
     //通用操作成功消息
 

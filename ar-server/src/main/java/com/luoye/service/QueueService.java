@@ -99,4 +99,10 @@ public interface QueueService extends IService<Queue> {
      */
     void completeTreatment(Long queueId);
 
+    /**
+     * 患者查询排队队列
+     * @param patientId 患者ID
+     * @return 医生队列数据
+     */
+    List<QueueDetailVO> getPatientQueueInfo(Long patientId);
 }

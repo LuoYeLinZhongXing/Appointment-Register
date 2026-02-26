@@ -41,9 +41,10 @@ public class OrderDetailVO {
     private Integer feeAmount;
 
     /**
-     * 订单状态：1.待支付 2.已支付 3.已取消 4.已就诊
+     * 订单状态：1.待支付 2.已支付 3.已取消 4.已就诊 5.已取号
      */
     private Integer orderStatus;
+
 
     /**
      * 支付时间
