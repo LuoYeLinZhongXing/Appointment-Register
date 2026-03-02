@@ -15,15 +15,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.net.InetAddress;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -32,6 +35,8 @@ import java.util.stream.Collectors;
 public class CachePreloadTask {
 
 
+    @Autowired
+    private ApplicationContext applicationContext;
     @Autowired
     private AdminMapper adminMapper;
     @Autowired
@@ -65,11 +70,42 @@ public class CachePreloadTask {
     @Autowired
     private QueueService queueService;
 
+    @Scheduled(cron ="0 0 0 * * ?")
+    public void preloadCacheData(){
+        String lockKey = "lock:distributed_cache_preload";
+        String instanceId = getInstanceId(); // 获取当前实例ID
+
+        // 使用Redis分布式锁，设置较短的等待时间
+        if (redisUtil.tryLock(lockKey, 1000, 3600000, TimeUnit.MILLISECONDS)) {
+            try {
+                log.info("实例 {} 获得预热任务锁，开始执行缓存预热", instanceId);
+                // 执行预热逻辑
+                doPreloadCacheData();
+            } finally {
+                redisUtil.unlock(lockKey);
+                log.info("实例 {} 释放预热任务锁", instanceId);
+            }
+        } else {
+            log.info("实例 {} 未能获得预热任务锁，跳过执行", instanceId);
+        }
+    }
+
+    private String getInstanceId() {
+        try {
+            // 获取本机IP或实例标识
+            return InetAddress.getLocalHost().getHostAddress() + ":" +
+                    applicationContext.getEnvironment().getProperty("server.port");
+        } catch (Exception e) {
+            return UUID.randomUUID().toString();
+        }
+    }
+
+
     /**
      * 每天零点执行，预加载科室和医生数据到Redis
      */
     @Scheduled(cron ="0 0 0 * * ?") // 每天零点执行
-    public void preloadCacheData(){
+    public void doPreloadCacheData(){
         String operationDetail = "";
         int successFlag = 1; // 默认成功
         String errorMessage = null;
