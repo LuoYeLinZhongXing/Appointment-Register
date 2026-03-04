@@ -1012,6 +1012,17 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                 //更新数据库
                 queueMapper.updateById(queue);
 
+                // 更新对应订单状态为已就诊
+                Order order = orderMapper.selectById(queue.getOrderId());
+                if (order != null) {
+                    order.setOrderStatus(Order.ORDER_STATUS_COMPLETED);
+                    order.setUpdateTime(LocalDateTime.now());
+                    orderMapper.updateById(order);
+                    log.info("订单状态已更新为已就诊，订单ID: {}, 队列ID: {}", order.getId(), queueId);
+                } else {
+                    log.warn("未找到对应的订单记录，队列 ID: {}, 订单 ID: {}", queueId, queue.getOrderId());
+                }
+
                 //删除缓存
                 String cacheKey = "queue_doctor::" + doctorId;
                 removeQueueElementFromCache(cacheKey, queueId);
@@ -1020,7 +1031,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                 redisUtil.unlock(lockKey);
             }
         }catch (Exception e){
-            log.error("结束治疗失败，队列ID:" + queueId, e);
+            log.error("结束治疗失败，队列 ID:" + queueId, e);
             throw new RuntimeException("结束治疗失败：" + e.getMessage());
         }
     }

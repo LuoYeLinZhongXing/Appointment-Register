@@ -341,7 +341,7 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
                 throw new BaseException(MessageConstant.PAYMENT_FAILED);
             }
 
-            //TODO，患者报道后处理排队逻辑
+            //患者报道后处理排队逻辑
 
 //            //根据订单类型处理排队逻辑
 //            queueService.handleQueueAfterPayment(order);
