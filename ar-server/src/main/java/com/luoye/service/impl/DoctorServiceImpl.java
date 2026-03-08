@@ -75,7 +75,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         doctor.setStatus(1);
         // 如果未设置职位，默认为普通医生（0）
         if(doctor.getPost() == null) {
-            doctor.setPost(0); // 默认为普通医生
+            // 默认为普通医生
+            doctor.setPost(0);
         }
         doctor.setCreateTime(LocalDateTime.now());
         doctor.setUpdateTime(LocalDateTime.now());
@@ -98,8 +99,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
 
         // 判断手机号是否已注册
         Long count = doctorMapper.selectCount(new QueryWrapper<Doctor>().eq("phone", doctorRegisterDTO.getPhone()));
-        if(count > 0)
-            return MessageConstant.PHONE_ERROR;
+        if(count > 0){return MessageConstant.PHONE_ERROR;}
 
         // 验证姓名
         if (doctorRegisterDTO.getName() == null || doctorRegisterDTO.getName().trim().isEmpty()) {
@@ -156,7 +156,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (doctorRegisterDTO.getPost() != null && doctorRegisterDTO.getPost() == 1) {
             return validateDepartmentHeadUniqueness(doctorRegisterDTO.getDeptId());
         }
-        return null; // 验证通过
+        // 验证通过
+        return null;
     }
 
     /**
@@ -169,15 +170,16 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         QueryWrapper<Doctor> headQuery = new QueryWrapper<>();
         headQuery.eq("dept_id", deptId)
                 .eq("post", 1)
-                .eq("status", 1); // 只统计在职的主任
+                // 只统计在职的主任
+                .eq("status", 1);
 
         Long existingHeadCount = doctorMapper.selectCount(headQuery);
 
         if (existingHeadCount > 0) {
             return "该科室已存在主任，无法重复设置";
         }
-
-        return null; // 验证通过
+        // 验证通过
+        return null;
     }
 
     /**
@@ -196,8 +198,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         Doctor doctor = doctorMapper.selectOne(new QueryWrapper<Doctor>()
                 .eq("phone", doctorLoginDTO.getPhone())
                 .eq("password", doctorLoginDTO.getPassword()));
-        if(doctor == null)
-            throw new BaseException(MessageConstant.LOGIN_ERROR);
+        if(doctor == null){throw new BaseException(MessageConstant.LOGIN_ERROR);}
         doctor.setPassword(null);
         //生成jwt令牌
         HashMap<String, Object> claims = new HashMap<>();
@@ -334,7 +335,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (doctorUpdateDTO.getPhone() != null) {
             QueryWrapper<Doctor> wrapper = new QueryWrapper<>();
             wrapper.eq("phone", doctorUpdateDTO.getPhone());
-            wrapper.ne("id", doctorUpdateDTO.getId()); // 排除当前医生自身
+            // 排除当前医生自身
+            wrapper.ne("id", doctorUpdateDTO.getId());
             Long count = doctorMapper.selectCount(wrapper);
             if (count > 0) {
                 throw new PhoneRepetitionException(MessageConstant.PHONE_ERROR);
@@ -475,7 +477,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
             // 从数据库查询（缓存未命中时）
             QueryWrapper<Doctor> wrapper = new QueryWrapper<>();
             wrapper.eq("dept_id", deptId);
-            wrapper.eq("status", 1); // 只查询在职医生
+            // 只查询在职医生
+            wrapper.eq("status", 1);
             doctorsInDept = doctorMapper.selectList(wrapper);
         }
         return doctorsInDept;

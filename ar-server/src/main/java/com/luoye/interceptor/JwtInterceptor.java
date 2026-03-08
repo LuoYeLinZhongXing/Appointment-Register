@@ -46,12 +46,12 @@ public class JwtInterceptor implements HandlerInterceptor {
         // 如果是登录或注册请求，直接放行
         String requestUri = request.getRequestURI();
         // 明确的白名单路径
-        if (requestUri.equals("/patient/login") ||
-                requestUri.equals("/patient/register") ||
-                requestUri.equals("/doctor/login") ||
-                requestUri.equals("/doctor/register") ||
-                requestUri.equals("/admin/login") ||
-                requestUri.equals("/admin/register")) {
+        if ("/patient/login".equals(requestUri) ||
+                "/patient/register".equals(requestUri) ||
+                "/doctor/login".equals(requestUri) ||
+                "/doctor/register".equals(requestUri) ||
+                "/admin/login".equals(requestUri) ||
+                "/admin/register".equals(requestUri)) {
             logger.info("登录或注册请求，直接放行: {}", requestUri);
             return true;
         }
@@ -155,12 +155,12 @@ public class JwtInterceptor implements HandlerInterceptor {
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         String requestUri = request.getRequestURI();
         // 不要在登录/注册请求后清理BaseContext，因为这些请求会设置BaseContext
-        if (!(requestUri.equals("/admin/login") || 
-              requestUri.equals("/admin/register") ||
-              requestUri.equals("/doctor/login") || 
-              requestUri.equals("/doctor/register") ||
-              requestUri.equals("/patient/login") || 
-              requestUri.equals("/patient/register"))) {
+        if (!("/admin/login".equals(requestUri) ||
+              "/admin/register".equals(requestUri) ||
+              "/doctor/login".equals(requestUri) ||
+              "/doctor/register".equals(requestUri) ||
+              "/patient/login".equals(requestUri) ||
+              "/patient/register".equals(requestUri))) {
             // 清理线程本地变量
             BaseContext.removeCurrentId();
             BaseContext.removeCurrentIdentity();

@@ -18,6 +18,8 @@
         <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
         <mybatis-spring.version>3.0.3</mybatis-spring.version>
         <knife4j.version>4.4.0</knife4j.version>
+        <spring-cloud.version>2022.0.4</spring-cloud.version>
+        <spring-cloud-alibaba.version>2022.0.0.0</spring-cloud-alibaba.version>
     </properties>
 
     <dependencies>
@@ -124,6 +126,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
 
     <build>
         <plugins>

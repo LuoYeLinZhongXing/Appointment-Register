@@ -88,9 +88,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         //插入数据库
         int result = adminMapper.insert(admin);
-        
+
         log.info("管理员插入结果：{}, 生成的 ID: {}", result, admin.getId());
-        
+
         if(result != 1){
             log.error("管理员插入失败，result={}, admin={}", result, admin);
             throw new BaseException(MessageConstant.ADMIN_REGISTER_FAILED);
@@ -219,7 +219,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
         // 更新管理员信息
         Admin adminToUpdate = new Admin();
-        adminToUpdate.setId(currentAdminId); // 确保设置ID
+        // 确保设置ID
+        adminToUpdate.setId(currentAdminId);
         BeanUtils.copyProperties(adminUpdateDTO, adminToUpdate);
         adminToUpdate.setUpdateTime(LocalDateTime.now());
 

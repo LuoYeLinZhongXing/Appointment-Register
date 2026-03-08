@@ -137,9 +137,12 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
         HashMap<String, Object> resultPage = new HashMap<>();
         resultPage.put("total", deptPage.getTotal());
         resultPage.put("depts", deptPage.getRecords());
-        resultPage.put("pages", Math.toIntExact(deptPage.getPages())); // 转换为int
-        resultPage.put("current", Math.toIntExact(deptPage.getCurrent())); // 转换为int
-        resultPage.put("size", Math.toIntExact(deptPage.getSize())); // 转换为int
+        // 转换为int
+        resultPage.put("pages", Math.toIntExact(deptPage.getPages()));
+        // 转换为int
+        resultPage.put("current", Math.toIntExact(deptPage.getCurrent()));
+        // 转换为int
+        resultPage.put("size", Math.toIntExact(deptPage.getSize()));
 
 
         return resultPage;
@@ -187,7 +190,8 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
             if (!newName.equals(existingDept.getName())) {
                 QueryWrapper<Dept> queryWrapper = new QueryWrapper<>();
                 queryWrapper.eq("name", newName);
-                queryWrapper.ne("id", existingDept.getId()); // 排除当前科室
+                // 排除当前科室
+                queryWrapper.ne("id", existingDept.getId());
                 Dept duplicateDept = deptMapper.selectOne(queryWrapper);
                 if (duplicateDept != null) {
                     throw new BaseException(newName + MessageConstant.ALREADY_EXISTS);
@@ -388,7 +392,8 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, Dept> implements De
     @Override
     public List<Map<String, Object>> getAllDeptIdAndName() {
         QueryWrapper<Dept> queryWrapper = new QueryWrapper<>();
-        queryWrapper.select("id", "name"); // 只查询id和name字段
+        // 只查询id和name字段
+        queryWrapper.select("id", "name");
         queryWrapper.orderByAsc("id");
 
         List<Dept> depts = deptMapper.selectList(queryWrapper);

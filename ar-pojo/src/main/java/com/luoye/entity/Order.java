@@ -21,19 +21,25 @@ public class Order implements Serializable {
     /**
      * 订单状态常量
      */
-    public static final Integer ORDER_STATUS_PENDING = 1; // 待支付
-    public static final Integer ORDER_STATUS_PAID = 2; // 已支付
-    public static final Integer ORDER_STATUS_CANCELLED = 3; // 已取消
-    public static final Integer ORDER_STATUS_COMPLETED = 4; // 已就诊
-    public static final Integer ORDER_STATUS_CHECKED_IN = 5; // 已取号
+    // 待支付
+    public static final Integer ORDER_STATUS_PENDING = 1;
+    // 已支付
+    public static final Integer ORDER_STATUS_PAID = 2;
+    // 已取消
+    public static final Integer ORDER_STATUS_CANCELLED = 3;
+    // 已就诊
+    public static final Integer ORDER_STATUS_COMPLETED = 4;
+    // 已取号
+    public static final Integer ORDER_STATUS_CHECKED_IN = 5;
 
 
     /**
      * 急诊标识常量
      */
-    public static final Integer EMERGENCY_NORMAL = 0; // 普通
-    public static final Integer EMERGENCY_URGENT = 1; // 急诊
-
+    // 普通
+    public static final Integer EMERGENCY_NORMAL = 0;
+    // 急诊
+    public static final Integer EMERGENCY_URGENT = 1;
     /**
      * 订单id
      */

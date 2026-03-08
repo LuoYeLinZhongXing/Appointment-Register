@@ -49,8 +49,9 @@ public class PatientController {
     @ApiResponse(responseCode = "200", description = "登录成功")
     @OperationLogger(operationType = "LOGIN", targetType = "PATIENT")
     public Result<Map<String, Object>> login(@RequestBody PatientLoginDTO patientLoginDTO) {
-        if(patientLoginDTO.getPhone() == null || patientLoginDTO.getPassword() == null)
+        if(patientLoginDTO.getPhone() == null || patientLoginDTO.getPassword() == null){
             throw new RuntimeException(MessageConstant.PHONE_PASSWORD_NOT_NULL);
+        }
         Map<String, Object> login = patientService.login(patientLoginDTO);
         return Result.success(login);
     }

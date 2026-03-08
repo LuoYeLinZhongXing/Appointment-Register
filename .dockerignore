@@ -1,0 +1,39 @@
+# .dockerignore
+.git
+.gitignore
+README.md
+*.md
+.DS_Store
+Thumbs.db
+
+# Maven相关
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# IDE相关
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# 日志文件
+logs/
+*.log
+
+# Docker相关
+Dockerfile
+.dockerignore
+
+# 测试相关
+src/test/
+
+# 配置文件（使用环境变量替代）
+application-docker.yml

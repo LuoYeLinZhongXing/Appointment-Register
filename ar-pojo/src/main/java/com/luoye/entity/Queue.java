@@ -19,12 +19,18 @@ public class Queue implements Serializable {
     /**
      * 排队状态常量
      */
-    public static final Integer QUEUE_STATUS_WAITING = 1; // 等待中
-    public static final Integer QUEUE_STATUS_CALLING = 2; // 呼叫中
-    public static final Integer QUEUE_STATUS_TREATING = 3; // 就诊中
-    public static final Integer QUEUE_STATUS_COMPLETED = 4; // 已完成
-    public static final Integer QUEUE_STATUS_MISSED = 5; // 过号
-    public static final Integer QUEUE_STATUS_CANCELLED = 6; // 已取消
+    // 等待中
+    public static final Integer QUEUE_STATUS_WAITING = 1;
+    // 呼叫中
+    public static final Integer QUEUE_STATUS_CALLING = 2;
+    // 就诊中
+    public static final Integer QUEUE_STATUS_TREATING = 3;
+    // 已完成
+    public static final Integer QUEUE_STATUS_COMPLETED = 4;
+    // 过号
+    public static final Integer QUEUE_STATUS_MISSED = 5;
+    // 已取消
+    public static final Integer QUEUE_STATUS_CANCELLED = 6;
 
     /**
      * 排队id

@@ -64,32 +64,40 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         }
 
         //判断姓名是否为空
-        if(patient.getName() == null || patient.getName().isEmpty())
+        if(patient.getName() == null || patient.getName().isEmpty()) {
             throw new BaseException(MessageConstant.NAME_NOT_NULL);
+        }
 
         //判断用户名称长度是否满足要求
-        if(patient.getName().length() > 10 || patient.getName().length() < 2)
+        if(patient.getName().length() > 10 || patient.getName().length() < 2) {
             throw new BaseException(MessageConstant.NAME_LENGTH_ERROR);
+        }
 
         //判断手机号格式是否满足要求
-        if(!patient.getPhone().matches("^1\\d{10}$"))
+        if(!patient.getPhone().matches("^1\\d{10}$")) {
             throw new BaseException(MessageConstant.PHONE_FORMAT_ERROR);
+        }
 
         //判断邮箱格式是否满足要求
-        if(patient.getEmail() != null && !patient.getEmail().matches("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$"))
+        if(patient.getEmail() != null && !patient.getEmail().matches("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
             throw new BaseException(MessageConstant.EMAIL_FORMAT_ERROR);
+        }
 
         //判断性别是否合法
-        if(patient.getGender() != 1 && patient.getGender() != 0)
+        if(patient.getGender() != 1 && patient.getGender() != 0) {
             throw new BaseException(MessageConstant.GENDER_ERROR);
+        }
 
         //判断身份证号码格式是否满足要求
-        if(patient.getCard() != null && !patient.getCard().matches("^[1-9]\\d{5}(18|19|([23]\\d))\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$"))
+        if(patient.getCard() != null && !patient.getCard().matches("^[1-9]\\d{5}(18|19|([23]\\d))\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$")) {
             throw new BaseException(MessageConstant.CARD_FORMAT_ERROR);
+        }
 
         // 判断手机号是否已注册
         Long count = patientMapper.selectCount(new QueryWrapper<Patient>().eq("phone", patient.getPhone()));
-        if(count > 0) throw new PhoneRepetitionException(MessageConstant.PHONE_ERROR);
+        if(count > 0) {
+            throw new PhoneRepetitionException(MessageConstant.PHONE_ERROR);
+        }
 
         patient.setPassword(DigestUtils.md5DigestAsHex(patient.getPassword().getBytes()));
 
@@ -97,7 +105,9 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         patient.setUpdateTime(LocalDateTime.now());
         int insert = patientMapper.insert(patient);
 
-        if(insert != 1) throw new BaseException(MessageConstant.REGISTER_ERROR);
+        if(insert != 1) {
+            throw new BaseException(MessageConstant.REGISTER_ERROR);
+        }
 
     }
 
@@ -118,7 +128,9 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         Patient patient = patientMapper.selectOne(new QueryWrapper<Patient>()
                 .eq("phone", patientLoginDTO.getPhone())
                 .eq("password", patientLoginDTO.getPassword()));
-        if(patient == null) throw new LoginException(MessageConstant.LOGIN_ERROR);
+        if(patient == null) {
+            throw new LoginException(MessageConstant.LOGIN_ERROR);
+        }
         patient.setPassword(null);
         //生成jwt令牌
         HashMap<String, Object> claims = new HashMap<>();
@@ -166,12 +178,14 @@ public class PatientServiceImpl extends ServiceImpl<PatientMapper, Patient> impl
         }
 
         //判断邮箱格式是否满足要求
-        if(patientUpdateDTO.getEmail() != null && !patientUpdateDTO.getEmail().matches("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$"))
+        if(patientUpdateDTO.getEmail() != null && !patientUpdateDTO.getEmail().matches("^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")) {
             throw new BaseException(MessageConstant.EMAIL_FORMAT_ERROR);
+        }
 
         //判断身份证号码格式是否满足要求
-        if(patientUpdateDTO.getCard() != null && !patientUpdateDTO.getCard().matches("^[1-9]\\d{5}(18|19|([23]\\d))\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$"))
+        if(patientUpdateDTO.getCard() != null && !patientUpdateDTO.getCard().matches("^[1-9]\\d{5}(18|19|([23]\\d))\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$")) {
             throw new BaseException(MessageConstant.CARD_FORMAT_ERROR);
+        }
 
         // 手机号验证
         if (patientUpdateDTO.getPhone() != null) {

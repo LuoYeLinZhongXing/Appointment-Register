@@ -1,0 +1,62 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ar-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: appointment_register
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - ar-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ar-redis
+    ports:
+      - "16379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ar-network
+
+  app:
+    build: .
+    container_name: ar-app
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - MYSQL_ROOT_PASSWORD=123456
+      - REDIS_PASSWORD=
+      - JWT_SECRET=appointment_register_docker_secret_key_that_is_long_enough_for_hs512_algorithm_minimum_64_characters_required
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - ar-network
+
+  frontend:
+    build:
+      context: ../../前端源码/appointment register
+      dockerfile: dockerfile
+    container_name: ar-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - ar-network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  ar-network:
+    driver: bridge

@@ -149,8 +149,8 @@ public class OrderServiceImpl  extends ServiceImpl<OrderMapper, Order> implement
             if (currentBooked == null){
                 currentBooked = slotMapper.selectById(registerDTO.getSlotId()).getBookedCount();
             }
-            if (totalCount == null)
-                totalCount = slotMapper.selectById(registerDTO.getSlotId()).getTotalCount();
+            if (totalCount == null){
+                totalCount = slotMapper.selectById(registerDTO.getSlotId()).getTotalCount();}
 
             if (currentBooked >= totalCount) {
                 throw new BaseException("号源已被预订完，请选择其他时间段");

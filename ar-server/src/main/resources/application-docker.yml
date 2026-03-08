@@ -1,0 +1,22 @@
+# application-docker.yml
+ap:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: mysql  # Docker网络中的MySQL服务名
+    port: 3306
+    database: appointment_register
+    username: root
+    password: ${MYSQL_ROOT_PASSWORD}
+  redis:
+    host: redis  # Docker网络中的Redis服务名
+    port: 6379
+    password: ${REDIS_PASSWORD:}
+    timeout: 1000
+  jwt:
+    key: ${JWT_SECRET:appointment_register_docker_secret_key_that_is_long_enough_for_hs512_algorithm_minimum_64_characters_required}
+    ttl: 604800000
+
+order:
+  prefix: "LYLZX"
+
+# 可以在这里覆盖其他docker环境特定的配置

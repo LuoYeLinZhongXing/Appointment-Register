@@ -33,13 +33,13 @@ public class LogAspect {
         LocalDateTime currentTime = LocalDateTime.now();
         Log log = buildBasicLog(operationLogger, currentTime);
 
+        Object result;
         try {
             // 执行原方法
-            Object result = joinPoint.proceed();
+            result = joinPoint.proceed();
 
             // 设置操作成功标志
             log.setSuccessFlag(1);
-            return result;
         } catch (Throwable throwable) {
             // 设置操作失败标志和错误消息
             log.setSuccessFlag(0);
@@ -50,11 +50,20 @@ public class LogAspect {
             setOperationDetails(joinPoint, log);
             // 设置操作人信息
             setOperatorInfo(log);
-            // 获取IP地址
+            // 获取 IP 地址
             log.setIpAddress(getIpAddress());
-            // 保存日志
-            logService.save(log);
+            
+            // 异步保存日志，避免阻塞主流程和影响事务
+            try{
+                logService.save(log);
+            }catch (Exception e){
+                // 日志保存失败只打印错误，不影响主业务
+                System.err.println("【日志保存失败】" + e.getMessage());
+                e.printStackTrace();
+            }
         }
+        
+        return result;
     }
 
     /**
@@ -99,7 +108,7 @@ public class LogAspect {
      */
     private void setOperatorInfo(Log log) {
         try {
-            // 从BaseContext获取用户信息
+            // 从 BaseContext 获取用户信息
             Long userId = BaseContext.getCurrentId();
             String identity = BaseContext.getCurrentIdentity();
 
@@ -123,12 +132,15 @@ public class LogAspect {
                         break;
                 }
             } else {
+                // 未登录状态（如注册、登录接口）
                 log.setOperatorName("匿名用户");
-                log.setOperatorType("ANONYMOUS");
+                log.setOperatorType("SYSTEM");
+                log.setOperatorId(null);
             }
         } catch (Exception e) {
             log.setOperatorName("未知用户");
-            log.setOperatorType("UNKNOWN");
+            log.setOperatorType("SYSTEM");
+            log.setOperatorId(null);
         }
     }
 

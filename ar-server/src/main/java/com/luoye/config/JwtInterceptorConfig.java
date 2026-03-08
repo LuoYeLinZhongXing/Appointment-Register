@@ -19,12 +19,18 @@ public class JwtInterceptorConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 添加JWT拦截器，指定需要验证的路径
         registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/patient/**") // 患者相关路径
-                .addPathPatterns("/doctor/**")  // 医生相关路径
-                .addPathPatterns("/admin/**")   // 管理员相关路径
-                .addPathPatterns("/slot/**")   // 号源相关路径
-                .addPathPatterns("/dept/**")    // 科室相关路径
-                .addPathPatterns("/order/**")   // 订单相关路径
+                // 患者相关路径
+                .addPathPatterns("/patient/**")
+                // 医生相关路径
+                .addPathPatterns("/doctor/**")
+                // 管理员相关路径
+                .addPathPatterns("/admin/**")
+                // 号源相关路径
+                .addPathPatterns("/slot/**")
+                // 科室相关路径
+                .addPathPatterns("/dept/**")
+                // 订单相关路径
+                .addPathPatterns("/order/**")
                 // 完整排除所有Swagger/Knife4j相关路径
                 .excludePathPatterns("/v3/api-docs/**")
                 .excludePathPatterns("/swagger-ui/**")

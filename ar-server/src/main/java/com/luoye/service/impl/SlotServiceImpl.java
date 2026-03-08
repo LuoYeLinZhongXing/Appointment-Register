@@ -607,7 +607,7 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
     public boolean isSlotAvailable(Long slotId) {
         // 直接检查号源状态，避免重复查询
         Slot slot = slotService.getSlotById(slotId);
-        if (slot == null || slot.getStatus() != Slot.STATUS_AVAILABLE) {
+        if (slot == null || !slot.getStatus().equals(Slot.STATUS_AVAILABLE)) {
             return false;
         }
 
@@ -618,9 +618,12 @@ public class SlotServiceImpl extends ServiceImpl<SlotMapper, Slot>  implements S
         Integer currentBooked = redisUtil.get(bookedCountKey, Integer.class);
         Integer totalCount = redisUtil.get(totalCountKey, Integer.class);
 
-        if (currentBooked == null)
+        if (currentBooked == null) {
             currentBooked = slotMapper.selectById(slotId).getBookedCount();
-        if (totalCount == null) totalCount = slotMapper.selectById(slotId).getTotalCount();
+        }
+        if (totalCount == null) {
+            totalCount = slotMapper.selectById(slotId).getTotalCount();
+        }
 
         return currentBooked < totalCount;
 

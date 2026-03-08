@@ -149,7 +149,8 @@ public class DeptController {
 
         // 将结果存入缓存
         if (depts != null && !depts.isEmpty()) {
-            redisUtil.set(cacheKey, depts, 2, TimeUnit.HOURS); // 缓存2小时
+            // 缓存2小时
+            redisUtil.set(cacheKey, depts, 2, TimeUnit.HOURS);
         }
 
         return Result.success(depts);

@@ -37,20 +37,15 @@ public class CachePreloadTask {
 
     @Autowired
     private ApplicationContext applicationContext;
+
     @Autowired
     private AdminMapper adminMapper;
+
     @Autowired
     private DeptMapper deptMapper;
 
     @Autowired
-    private DeptService deptService;  // 添加DeptService依赖
-
-
-    @Autowired
     private DoctorMapper doctorMapper;
-
-    @Autowired
-    private AdminService adminService;
 
     @Autowired
     private PatientService patientService;
@@ -62,9 +57,6 @@ public class CachePreloadTask {
     private LogService logService;
 
     @Autowired
-    private SlotService slotService;
-
-    @Autowired
     private SlotMapper slotMapper;
 
     @Autowired
@@ -73,7 +65,8 @@ public class CachePreloadTask {
     @Scheduled(cron ="0 0 0 * * ?")
     public void preloadCacheData(){
         String lockKey = "lock:distributed_cache_preload";
-        String instanceId = getInstanceId(); // 获取当前实例ID
+        // 获取当前实例ID
+        String instanceId = getInstanceId();
 
         // 使用Redis分布式锁，设置较短的等待时间
         if (redisUtil.tryLock(lockKey, 1000, 3600000, TimeUnit.MILLISECONDS)) {
@@ -107,7 +100,8 @@ public class CachePreloadTask {
     @Scheduled(cron ="0 0 0 * * ?") // 每天零点执行
     public void doPreloadCacheData(){
         String operationDetail = "";
-        int successFlag = 1; // 默认成功
+        // 默认成功
+        int successFlag = 1;
         String errorMessage = null;
         try {
 
@@ -135,7 +129,8 @@ public class CachePreloadTask {
             operationDetail += "；缓存预加载任务完成！";
 
         }catch (Exception e){
-            successFlag = 0; // 标记为失败
+            // 标记为失败
+            successFlag = 0;
             errorMessage = e.getMessage();
             operationDetail += "；缓存预加载任务执行失败: " + e.getMessage();
             log.error("缓存预加载任务执行失败: " + e.getMessage(), e);
@@ -143,14 +138,21 @@ public class CachePreloadTask {
         }finally {
             // 记录操作日志
             Log logEntity = new Log();
-            logEntity.setLogType("SYSTEM_TASK"); // 系统任务
-            logEntity.setOperatorType("SYSTEM"); // 系统操作
-            logEntity.setOperatorId(-1L); // 系统标识
-            logEntity.setOperatorName("System Task"); // 系统任务名称
-            logEntity.setTargetType("CACHE"); // 目标类型为缓存
-            logEntity.setTargetId(null); // 没有特定的目标ID
+            // 系统任务
+            logEntity.setLogType("SYSTEM_TASK");
+            // 系统操作
+            logEntity.setOperatorType("SYSTEM");
+            // 系统标识
+            logEntity.setOperatorId(-1L);
+            // 系统任务名称
+            logEntity.setOperatorName("System Task");
+            // 目标类型为缓存
+            logEntity.setTargetType("CACHE");
+            // 没有特定的目标ID
+            logEntity.setTargetId(null);
             logEntity.setOperationDetail(operationDetail);
-            logEntity.setIpAddress("SYSTEM"); // 系统任务IP
+            // 系统任务IP
+            logEntity.setIpAddress("SYSTEM");
             logEntity.setSuccessFlag(successFlag);
             if (errorMessage != null) {
                 logEntity.setErrorMessage(errorMessage);
@@ -175,7 +177,8 @@ public class CachePreloadTask {
 
             if (admins != null && !admins.isEmpty()) {
                 Random random = new Random();
-                long expireHours = 20 + random.nextInt(11); // 20-30小时
+                // 20-30小时
+                long expireHours = 20 + random.nextInt(11);
 
 
                 // 缓存单个管理员信息
@@ -253,12 +256,14 @@ public class CachePreloadTask {
 
         // 将所有启用的科室列表存入缓存
         String allEnabledDeptsKey = "dept_list::enabled";
-        redisUtil.set(allEnabledDeptsKey, enabledDepts, 25, TimeUnit.HOURS);  // 24小时过期
+        // 24小时过期
+        redisUtil.set(allEnabledDeptsKey, enabledDepts, 25, TimeUnit.HOURS);
 
         // 将每个科室单独存入缓存
         for (Dept dept : enabledDepts) {
             String deptKey = "dept::" + dept.getId();
-            redisUtil.set(deptKey, dept, 25, TimeUnit.HOURS);  // 24小时过期
+            // 24小时过期
+            redisUtil.set(deptKey, dept, 25, TimeUnit.HOURS);
         }
 
         log.info("科室数据预加载完成，共加载 {} 个科室", enabledDepts.size());
@@ -279,7 +284,8 @@ public class CachePreloadTask {
             if (doctorsInDept != null && !doctorsInDept.isEmpty()) {
                 // 将该科室下的医生列表存入缓存
                 String doctorsByDeptKey = "doctor_dept::" + dept.getId();
-                redisUtil.set(doctorsByDeptKey, doctorsInDept, 25, TimeUnit.HOURS);  // 24小时过期
+                // 24小时过期
+                redisUtil.set(doctorsByDeptKey, doctorsInDept, 25, TimeUnit.HOURS);
                 totalDoctors += doctorsInDept.size();
             }
         }

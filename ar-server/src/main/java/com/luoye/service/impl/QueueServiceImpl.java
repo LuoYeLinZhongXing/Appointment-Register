@@ -83,9 +83,12 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
             QueryWrapper<Queue> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("doctor_id", doctorId)
                     .in("queue_status",
-                            Queue.QUEUE_STATUS_WAITING,    // 1 - 等待中
-                            Queue.QUEUE_STATUS_CALLING,    // 2 - 呼叫中
-                            Queue.QUEUE_STATUS_TREATING)   // 3 - 就诊中 ← 添加这个状态
+                            // 1 - 等待中
+                            Queue.QUEUE_STATUS_WAITING,
+                            // 2 - 呼叫中
+                            Queue.QUEUE_STATUS_CALLING,
+                            // 3 - 就诊中 ← 添加这个状态
+                            Queue.QUEUE_STATUS_TREATING)
                     .orderByAsc("queue_number");
 
 
@@ -216,17 +219,17 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
 
         try {
             log.info("开始获取医生队列详情，医生ID: {}, 缓存键: {}", doctorId, cacheKey);
-            
+
             // 检查缓存是否存在
             boolean hasKey = redisUtil.hasKey(cacheKey);
             log.info("缓存是否存在: {}", hasKey);
-            
+
             if (!hasKey) {
                 // 缓存不存在，初始化队列
                 log.info("缓存不存在，开始初始化医生队列，医生ID: {}", doctorId);
                 boolean initSuccess = initializeDoctorQueueInRedis(doctorId);
                 log.info("初始化结果: {}", initSuccess);
-                
+
                 // 检查初始化后缓存是否存在
                 hasKey = redisUtil.hasKey(cacheKey);
                 log.info("初始化后缓存是否存在: {}", hasKey);
@@ -236,7 +239,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                 // 直接从Redis获取并转换，避免调用getDoctorQueueFromRedis造成的重复处理
                 List<Object> objectList = redisUtil.lrange(cacheKey, 0, -1);
                 log.info("从Redis获取到的对象列表大小: {}", objectList != null ? objectList.size() : 0);
-                
+
                 if (objectList != null && !objectList.isEmpty()) {
                     log.info("开始处理Redis中的队列数据...");
                     for (int i = 0; i < objectList.size(); i++) {
@@ -244,9 +247,9 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                         try {
                             String jsonStr = obj.toString();
                             log.debug("处理第{}个队列元素: {}", i, jsonStr);
-                            
+
                             Queue queue = objectMapper.readValue(jsonStr, Queue.class);
-                            log.info("解析队列对象成功，队列ID: {}, 患者ID: {}, 状态: {}", 
+                            log.info("解析队列对象成功，队列ID: {}, 患者ID: {}, 状态: {}",
                                    queue.getId(), queue.getPatientId(), queue.getQueueStatus());
 
                             QueueDetailVO detailVO = new QueueDetailVO();
@@ -283,7 +286,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
 
                             detailList.add(detailVO);
                             log.info("添加队列详情到结果列表，当前列表大小: {}", detailList.size());
-                            
+
                         } catch (JsonProcessingException e) {
                             log.error("解析队列数据失败: " + obj, e);
                         }
@@ -311,6 +314,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
      * @param queueList 队列列表
      * @return 是否同步成功
      */
+    @Override
     public boolean syncQueueToRedis(Long doctorId, List<Queue> queueList) {
 
         String cacheKey = "queue_doctor::" + doctorId;
@@ -344,16 +348,20 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
             queue.setDeptId(order.getDeptId());
             queue.setQueueNumber(getNextQueueNumber(order.getDoctorId()));
             queue.setQueueStatus(Queue.QUEUE_STATUS_WAITING);
-            queue.setCheckInTime(LocalDateTime.now()); // 这里可能需要改为取号时间
+            // 这里可能需要改为取号时间
+            queue.setCheckInTime(LocalDateTime.now());
             // 根据是否急诊设置不同的初始状态
             if (Order.EMERGENCY_URGENT.equals(order.getIsEmergency())) {
-                queue.setIsPriority(1); // 设置为优先级
+                // 设置为优先级
+                queue.setIsPriority(1);
             } else {
-                queue.setIsPriority(0); // 普通优先级
+                // 普通优先级
+                queue.setIsPriority(0);
             }
-
-            queue.setMissedCount(0); // 初始过号次数为0
-            queue.setMaxMissedAllowed(3); // 最大允许过号次数
+            // 初始过号次数为0
+            queue.setMissedCount(0);
+            // 最大允许过号次数
+            queue.setMaxMissedAllowed(3);
             queue.setCreateTime(LocalDateTime.now());
             queue.setUpdateTime(LocalDateTime.now());
 
@@ -552,7 +560,8 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                 List<Queue> queueList = getDoctorQueueFromRedis(doctorId);
 
                 if (queueList.isEmpty()) {
-                    return 1; // 队列为空，从1开始
+                    // 队列为空，从1开始
+                    return 1;
                 }
 
                 // 获取队列中最大的排队号码
@@ -615,7 +624,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
         try {
             log.info("=== 患者查询排队队列开始 ===");
             log.info("患者ID: {}", patientId);
-            
+
             // 查询患者在等待、呼叫、就诊中状态的队列记录
             QueryWrapper<Queue> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("patient_id", patientId)
@@ -645,7 +654,7 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
             // 获取唯一的队列数据（理论上应该只有一条记录）
             Queue patientQueue = patientQueues.get(0);
             Long doctorId = patientQueue.getDoctorId();
-            log.info("找到患者队列记录 - 队列ID: {}, 医生ID: {}, 状态: {}", 
+            log.info("找到患者队列记录 - 队列ID: {}, 医生ID: {}, 状态: {}",
                    patientQueue.getId(), doctorId, patientQueue.getQueueStatus());
 
             // 调用getDoctorQueueFromRedis方法查询医生队列
@@ -774,7 +783,8 @@ public class QueueServiceImpl extends ServiceImpl<QueueMapper, Queue> implements
                         .mapToInt(Queue::getQueueNumber)
                         .max()
                         .orElse(0);
-                queue.setQueueNumber(maxQueueNumber + 1); // 设置为最大号码+1
+                // 设置为最大号码+1
+                queue.setQueueNumber(maxQueueNumber + 1);
 
                 //判断是否超过最大允许过号次数
                 if (queue.getMissedCount() >= queue.getMaxMissedAllowed()) {

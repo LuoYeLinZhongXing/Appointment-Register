@@ -7,6 +7,16 @@ cors:
   allow-credentials: true
   max-age: 3600
 
+# MySQL慢查询日志配置方法：
+# 1. 登录MySQL执行：
+#    SET GLOBAL slow_query_log = 'ON';
+#    SET GLOBAL long_query_time = 2;
+#    SET GLOBAL log_queries_not_using_indexes = 'ON';
+# 2. 或在my.cnf中添加：
+#    [mysqld]
+#    slow_query_log = 1
+#    long_query_time = 2
+#    log_queries_not_using_indexes = 1
 
 # 服务器配置
 server:
@@ -29,7 +39,6 @@ redisson:
     timeout: 3000                 # 命令执行超时时间（3秒）
     threads: 4                      # Redisson内部线程数
     nettyThreads: 8                 # Netty线程数（用于网络通信）
-
 
 spring:
   mvc:

@@ -1,19 +1,19 @@
 ap:
   datasource:
-    driver-class-name: com.mysql.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     host: localhost
-    port: 3306
+    port: 3307
     database: appointment_register
     username: root
     password: 123456
   redis:
       host: localhost
-      port: 6379
+      port: 16379
       password: ""
       timeout: 1000
   jwt:
-    key: appointment_register_development_secret_key_that_is_long_enough_for_hs512_algorithm_minimum_64_characters_required    # 开发环境专用密钥
-    ttl: 604800000  # 7天 (7*24*60*60*1000)
+    key: appointment_register_development_secret_key_that_is_long_enough_for_hs512_algorithm_minimum_64_characters_required
+    ttl: 604800000
 
 order:
-  prefix: "LYLZX"  # 订单号前缀
+  prefix: "LYLZX"
